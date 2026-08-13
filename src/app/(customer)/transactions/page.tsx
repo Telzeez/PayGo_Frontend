@@ -43,11 +43,17 @@ export default function TransactionsPage() {
     return tx.hardwareStatus === filter;
   });
 
+const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
   const getStatusBadge = (status: HardwareStatus, type: 'topup' | 'consumption') => {
     if (type === 'consumption') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
-          ⚡ Consumption
+          <ZapIcon className="w-3.5 h-3.5 text-amber-500" /> Consumption
         </span>
       );
     }

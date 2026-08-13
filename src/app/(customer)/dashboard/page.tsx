@@ -117,12 +117,22 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <Link href="/recharge" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2 text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-500">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-          Recharge Meter
-        </Link>
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          <Link href="/recharge" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-500">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            Recharge Meter
+          </Link>
+
+          <Link href="/marketplace" className="w-full bg-amber-500 text-zinc-950 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-amber-400 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Find Nearby Energy
+          </Link>
+        </div>
 
         {/* Intuitive Quick Navigation Grid */}
         <div className="grid grid-cols-3 gap-2.5 mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-center text-xs font-semibold">

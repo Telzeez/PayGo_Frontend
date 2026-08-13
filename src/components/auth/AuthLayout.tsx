@@ -1,6 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
-import logo from '../../../public/logo.png';
+import Link from 'next/link';
 
 export default function AuthLayout({ children, title, subtitle }: { children: React.ReactNode, title: string, subtitle: string }) {
   return (
@@ -8,9 +7,11 @@ export default function AuthLayout({ children, title, subtitle }: { children: Re
       <div className="w-full max-w-md bg-white dark:bg-[#121214] rounded-3xl p-6 sm:p-8 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
         
         <div className="flex justify-center mb-6">
-          <div className="flex items-center justify-center">
-            <Image src={logo} alt="PayGo Logo" className="w-12 h-12 object-contain rounded-2xl shadow-sm" />
-          </div>
+          <Link href="/" className="group flex items-center">
+            <span className="font-black text-3xl tracking-tighter text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              PayGo<span className="text-orange-500">.</span>
+            </span>
+          </Link>
         </div>
 
         <h1 className="text-2xl font-bold text-center text-zinc-900 dark:text-white mb-2">{title}</h1>

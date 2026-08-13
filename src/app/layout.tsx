@@ -30,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} antialiased h-full`}>
-      <body className="h-full flex flex-col font-sans">
+    <html lang="en" className={`${inter.variable} antialiased min-h-screen`}>
+      <body className="min-h-screen flex flex-col font-sans">
         <AuthProvider>
           {children}
         </AuthProvider>

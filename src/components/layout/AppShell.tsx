@@ -1,11 +1,9 @@
 "use client";
 
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import logo from '../../../public/logo.png';
 
 // Premium Inline SVGs (Lucide)
 const ZapIcon = ({ className }: { className?: string }) => (
@@ -41,12 +39,28 @@ const KeyIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const MarketIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+);
+
+const BookIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+    <path d="M6.5 6H20"></path>
+  </svg>
+);
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
+    { label: 'Market', path: '/', icon: MarketIcon },
+    { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },
     { label: 'Tokens', path: '/tokens', icon: KeyIcon },
@@ -59,11 +73,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sleek Header Navigation */}
       <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#09090B]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-3.5 flex justify-between items-center w-full">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
-            <div className="flex items-center justify-center">
-              <Image src={logo} alt="PayGo Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">PayGo</span>
+          <Link href="/" className="group flex items-center shrink-0">
+            <span className="font-black text-xl tracking-tighter text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              PayGo<span className="text-orange-500">.</span>
+            </span>
           </Link>
 
           {/* Desktop Navigation Links */}
@@ -125,9 +138,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 pb-36 sm:pb-40">
+      <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 pb-24">
         {children}
       </main>
+
+      {/* Footer Bar */}
+      <footer className="w-full border-t border-zinc-200/60 dark:border-zinc-800/60 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 pb-24 md:pb-8">
+        <p>
+          © {new Date().getFullYear()} PayGo System. Architected & Engineered by{' '}
+          <a
+            href="https://github.com/Telzeez"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-zinc-700 dark:text-zinc-300 hover:text-amber-500 transition-colors"
+          >
+            Telzeez
+          </a>{' '}
+          (<a href="https://github.com/Telzeez" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub ↗</a> • <a href="https://https://www.linkedin.com/in/abdlazeezolasunkanmi/" target="_blank" rel="noopener noreferrer" className="hover:underline">LinkedIn ↗</a>).
+        </p>
+      </footer>
 
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">

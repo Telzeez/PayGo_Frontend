@@ -61,9 +61,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
             <div className="flex items-center justify-center">
-              <Image src={logo} alt="SolarPayMe Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm" />
+              <Image src={logo} alt="PayGo Logo" className="w-8 h-8 object-contain rounded-xl shadow-sm" />
             </div>
-            <span className="font-bold text-lg tracking-tight">SolarPayMe</span>
+            <span className="font-bold text-lg tracking-tight">PayGo</span>
           </Link>
 
           {/* Desktop Navigation Links */}

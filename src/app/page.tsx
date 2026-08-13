@@ -22,7 +22,7 @@ export default function LandingPage() {
 
       <div className="relative z-20 flex flex-col items-center max-w-xl mx-auto w-full">
         <div className="flex items-center justify-center mb-8">
-          <Image src={logo} alt="SolarPayMe Logo" className="w-16 h-16 object-contain rounded-2xl shadow-lg" />
+          <Image src={logo} alt="PayGo Logo" className="w-16 h-16 object-contain rounded-2xl shadow-lg" />
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white mb-6">

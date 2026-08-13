@@ -9,7 +9,7 @@ export default function AuthLayout({ children, title, subtitle }: { children: Re
         
         <div className="flex justify-center mb-6">
           <div className="flex items-center justify-center">
-            <Image src={logo} alt="SolarPayMe Logo" className="w-12 h-12 object-contain rounded-2xl shadow-sm" />
+            <Image src={logo} alt="PayGo Logo" className="w-12 h-12 object-contain rounded-2xl shadow-sm" />
           </div>
         </div>
 

@@ -88,7 +88,7 @@ export default function ProfilePage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Account & Meter Profile</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Manage your SolarPayMe profile and device connectivity.
+              Manage your PayGo profile and device connectivity.
             </p>
           </div>
         </div>

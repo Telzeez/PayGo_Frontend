@@ -52,7 +52,7 @@ export default function AuthPage() {
   return (
     <AuthLayout 
       title={isLogin ? "Welcome Back" : "Create Account"} 
-      subtitle={isLogin ? "Sign in to your SolarPayMe account" : "Join SolarPayMe today"}
+      subtitle={isLogin ? "Sign in to your PayGo account" : "Join PayGo today"}
     >
       
       {isSubmitting ? (

@@ -1,6 +1,6 @@
 {
-  "name": "SolarPayMe — Prepaid Energy Metering",
-  "short_name": "SolarPayMe",
+  "name": "PayGo — Prepaid Energy Metering",
+  "short_name": "PayGo",
   "description": "Prepaid solar-energy metering and billing platform for compound solar customers.",
   "start_url": "/dashboard",
   "display": "standalone",

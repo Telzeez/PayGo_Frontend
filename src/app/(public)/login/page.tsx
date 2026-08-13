@@ -1,11 +1,25 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
+// Main page component with Suspense boundary
 export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-12 min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-950 dark:border-white"></div>
+      </div>
+    }>
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
+// Inner component that uses useSearchParams
+function AuthPageContent() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
   const initialMode = searchParams.get('mode');
@@ -19,7 +33,7 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const { login, register } = useAuth();
   const router = useRouter();
 
@@ -34,15 +48,14 @@ export default function AuthPage() {
       } else {
         await register({ email, password, phone: phone || undefined, role });
       }
-      
+
       setIsSubmitting(false);
       setIsSuccess(true);
-      
+
       setTimeout(() => {
         const destination = role === 'OWNER' ? '/admin' : redirect;
         router.push(destination);
       }, 1200);
-
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
       setIsSubmitting(false);
@@ -50,11 +63,10 @@ export default function AuthPage() {
   };
 
   return (
-    <AuthLayout 
-      title={isLogin ? "Welcome Back" : "Create Account"} 
+    <AuthLayout
+      title={isLogin ? "Welcome Back" : "Create Account"}
       subtitle={isLogin ? "Sign in to your PayGo account" : "Join PayGo today"}
     >
-      
       {isSubmitting ? (
         <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-in fade-in zoom-in duration-300">
           <div className="relative w-24 h-24 flex items-center justify-center">
@@ -121,7 +133,6 @@ export default function AuthPage() {
         </div>
       ) : (
         <div className="animate-in fade-in duration-500">
-          
           {error && (
             <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm font-medium border border-red-100 dark:border-red-500/20 mb-4">
               {error}
@@ -154,14 +165,13 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            
             {!isLogin && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="fullname">
                     Full Name
                   </label>
-                  <input 
+                  <input
                     id="fullname"
                     type="text"
                     value={fullName}
@@ -175,7 +185,7 @@ export default function AuthPage() {
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="phone">
                     Phone Number (Optional)
                   </label>
-                  <input 
+                  <input
                     id="phone"
                     type="tel"
                     value={phone}
@@ -190,17 +200,25 @@ export default function AuthPage() {
                     Account Type
                   </label>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setRole('BUYER')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${role === 'BUYER' ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm' : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'}`}
+                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                        role === 'BUYER'
+                          ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm'
+                          : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
+                      }`}
                     >
                       Customer (Buyer)
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setRole('OWNER')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${role === 'OWNER' ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm' : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'}`}
+                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                        role === 'OWNER'
+                          ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm'
+                          : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
+                      }`}
                     >
                       Admin (Owner)
                     </button>
@@ -213,7 +231,7 @@ export default function AuthPage() {
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="email">
                 Email Address
               </label>
-              <input 
+              <input
                 id="email"
                 type="email"
                 value={email}
@@ -228,7 +246,7 @@ export default function AuthPage() {
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="password">
                 Password
               </label>
-              <input 
+              <input
                 id="password"
                 type="password"
                 value={password}
@@ -241,14 +259,17 @@ export default function AuthPage() {
 
             {isLogin && (
               <div className="flex justify-end mt-[-4px]">
-                <button type="button" className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium transition-colors">
+                <button
+                  type="button"
+                  className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium transition-colors"
+                >
                   Forgot password?
                 </button>
               </div>
             )}
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] mt-2 text-sm"
             >
               {isLogin ? 'Sign In' : 'Create Account'}

@@ -30,7 +30,9 @@ export interface UserProfile {
   id: number;
   email: string;
   phone: string | null;
-  role: "BUYER" | "OWNER";
+  role: string;
+  isBuyer: boolean;
+  isSeller: boolean;
   createdAt?: string;
 }
 
@@ -51,7 +53,11 @@ export interface PaymentInitiateResponse {
   paymentUrl?: string;
   reference?: string;
   error?: string;
-}
+  message?: string;
+  data?: {
+    authorization_url: string;
+    reference: string;
+}}
 
 export interface VerifyTransactionResponse {
   status: "pending" | "success" | "failed";

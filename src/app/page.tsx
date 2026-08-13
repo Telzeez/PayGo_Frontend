@@ -280,7 +280,7 @@ function MarketplaceContent() {
       <section className="relative bg-white dark:bg-[#121214] border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 lg:px-12 py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column: Product Branding & Primary CTA */}
+          {/* Left Column: Project Branding & Primary CTA */}
           <div className="lg:col-span-4 space-y-6 text-left">
             <div>
               <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">PAYGO MARKETPLACE</span>
@@ -592,7 +592,7 @@ function MarketplaceContent() {
               href="/documentation"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
             >
-              <span>Read Easy Product Guide & System Documentation</span>
+              <span>Read Easy Project Guide & System Documentation</span>
               <ArrowRightIcon className="w-4 h-4" />
             </Link>
           </div>

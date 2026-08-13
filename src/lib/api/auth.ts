@@ -10,7 +10,7 @@ export interface RegisterParams {
   email: string;
   password: string;
   phone?: string;
-  role: 'BUYER' | 'OWNER';
+  role: string;
 }
 
 export const authApi = {

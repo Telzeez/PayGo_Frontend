@@ -83,6 +83,13 @@ export default function Dashboard() {
 
   const { balance, status, deviceId, transactions } = deviceData || {};
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon'; // 12:00 PM to 4:59 PM
+    return 'Good evening'; // 5:00 PM onwards
+  };
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700">
       
@@ -90,7 +97,7 @@ export default function Dashboard() {
       <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">Good morning</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
             <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || DEVICE_ID}</h2>
           </div>
           

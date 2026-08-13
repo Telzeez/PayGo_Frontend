@@ -10,7 +10,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'BUYER' | 'OWNER'>('BUYER');
+  // 1. Added role state variable with 'CUSTOMER' as the default selection
+  const [role, setRole] = useState<'CUSTOMER' | 'SELLER'>('CUSTOMER'); 
   
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +31,9 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
+      // 2. Pass 'role' directly as a clean variable now that it exists in state
       await register({ email, password, phone, role });
-      router.push('/dashboard');
+      router.push('/onboarding');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -48,6 +50,37 @@ export default function RegisterPage() {
             {error}
           </div>
         )}
+
+        {/* 3. Role Selection Segmented Control Buttons */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            I want to join as a:
+          </label>
+          <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setRole('CUSTOMER')}
+              className={`py-2.5 text-xs font-semibold rounded-lg transition-all ${
+                role === 'CUSTOMER'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              Energy Buyer
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('SELLER')}
+              className={`py-2.5 text-xs font-semibold rounded-lg transition-all ${
+                role === 'SELLER'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              Solar Seller
+            </button>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="email">
@@ -91,28 +124,6 @@ export default function RegisterPage() {
             className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-shadow"
             placeholder="Min 6 characters"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-            Account Type
-          </label>
-          <div className="flex gap-3">
-            <button 
-              type="button"
-              onClick={() => setRole('BUYER')}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${role === 'BUYER' ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent' : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'}`}
-            >
-              Buyer
-            </button>
-            <button 
-              type="button"
-              onClick={() => setRole('OWNER')}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${role === 'OWNER' ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent' : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'}`}
-            >
-              Owner
-            </button>
-          </div>
         </div>
 
         <button 

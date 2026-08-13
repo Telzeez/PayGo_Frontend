@@ -42,6 +42,7 @@ export interface SellerListing {
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
+  sourceName: string
 }
 
 export interface MarketplacePurchaseResult {
@@ -144,4 +145,19 @@ export const marketplaceApi = {
       requireAuth: true,
     });
   },
+
+  // Buyer Purchases
+  getPurchases: async () => {
+    return apiClient<{ success: boolean; purchases: any[] }>('/api/marketplace/purchases', {
+      method: 'GET',
+      requireAuth: true,
+    });
+  },
+
+  getPurchaseDetail: async (purchaseId: number) => {
+    return apiClient<{ success: boolean; purchase: any }>(`/api/marketplace/purchases/${purchaseId}`, {
+      method: 'GET',
+      requireAuth: true,
+    });
+  }
 };

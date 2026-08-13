@@ -150,7 +150,7 @@ export default function DocumentationPage() {
               }`}
             >
               <BookOpenIcon className="w-4 h-4" />
-              <span>Full Product Story & Concept</span>
+              <span>Full Project Story & Concept</span>
             </button>
             <button
               onClick={() => setActiveTab('estimator')}

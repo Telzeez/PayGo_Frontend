@@ -204,70 +204,103 @@ export default function BuyerMarketplacePage() {
         </section>
       ) : (
         <>
-          {/* Active Search Radius Controls */}
-          <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-              <span className={`w-2 h-2 rounded-full ${isDemoLocation ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
-              <span>Matching near <strong className="text-zinc-900 dark:text-white">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong></span>
-              {isDemoLocation && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  DEV DEMO LOCATION
-                </span>
-              )}
-            </div>
+          {/* Unified Marketplace Feed */}
+          <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl overflow-hidden shadow-sm">
+            {/* Header & Controls Area */}
+            <div className="p-5 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/20">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div>
+                  <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                    <MapPinIcon className="w-4 h-4 text-amber-500" />
+                    Eligible Nearby Sellers ({listings.length})
+                  </h2>
+                  <div className="flex flex-col gap-2 mt-2">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full ${isDemoLocation ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
+                      Coordinates: <strong className="text-zinc-900 dark:text-white">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong>
+                      {isDemoLocation && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tracking-wider">
+                          DEMO
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Adjust matching distance radius below to screen nearby solar generation sources.
+                    </p>
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-zinc-500">Search Radius:</span>
-              <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800">
-                {[200, 500, 1000, 2000, 5000].map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setRadiusMeters(r)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                      radiusMeters === r
-                        ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {r >= 1000 ? `${r / 1000}km` : `${r}m`}
-                  </button>
-                ))}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-2 justify-end">
+                    <button
+                      onClick={requestLocation}
+                      className="px-3 py-1.5 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/20 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5"
+                    >
+                      <MapPinIcon className="w-3 h-3" /> Use GPS
+                    </button>
+                    <button
+                      onClick={useDemoLocation}
+                      className="px-3 py-1.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[11px] font-bold transition-all"
+                    >
+                      Demo Location
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2.5 justify-end">
+                    <div className="flex items-center gap-1 bg-white dark:bg-[#121214] p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm">
+                      {[200, 500, 1000, 2000, 5000].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => setRadiusMeters(r)}
+                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                            radiusMeters === r
+                              ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                              : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {r >= 1000 ? `${r / 1000}km` : `${r}m`}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={fetchNearby}
+                      className="text-[11px] bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800 shadow-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                      </svg>
+                      Refresh
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </section>
 
-          {/* Nearby Energy Feed */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                Nearby Energy Sellers ({listings.length})
-              </h2>
-              <button
-                onClick={fetchNearby}
-                className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white font-medium flex items-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                </svg>
-                Refresh Search
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="space-y-3">
-                <div className="h-28 bg-zinc-100 dark:bg-zinc-900 rounded-3xl animate-pulse"></div>
-                <div className="h-28 bg-zinc-100 dark:bg-zinc-900 rounded-3xl animate-pulse"></div>
-              </div>
-            ) : listings.length === 0 ? (
-              <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-8 shadow-sm text-center space-y-2">
-                <p className="text-sm font-bold text-zinc-900 dark:text-white">No active energy sellers nearby</p>
-                <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                  No active seller listings match your current search radius ({radiusMeters >= 1000 ? `${radiusMeters / 1000}km` : `${radiusMeters}m`}). Try increasing the search radius above.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {listings.map((item) => (
+            {/* Feed List Area */}
+            <div className="p-5 sm:p-6 bg-zinc-50/30 dark:bg-[#09090b]">
+              {loading ? (
+                <div className="space-y-3">
+                  <div className="h-28 bg-white dark:bg-[#121214] rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-pulse"></div>
+                  <div className="h-28 bg-white dark:bg-[#121214] rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-pulse"></div>
+                </div>
+              ) : listings.length === 0 ? (
+                <div className="text-center py-10">
+                  <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mx-auto mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-zinc-400">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                  </div>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-white">No active energy sellers nearby</p>
+                  <p className="text-xs text-zinc-500 max-w-xs mx-auto mt-1.5">
+                    No active seller listings match your current search radius ({radiusMeters >= 1000 ? `${radiusMeters / 1000}km` : `${radiusMeters}m`}). Try expanding the radius above.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {listings.map((item) => (
                   <div
                     key={item.listingId}
                     className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -319,6 +352,7 @@ export default function BuyerMarketplacePage() {
                 ))}
               </div>
             )}
+            </div>
           </section>
         </>
       )}

@@ -88,18 +88,17 @@ export default function VerifyPage() {
       }
     };
 
-    if (status === 'INITIALIZING') {
-      setStatus('VERIFYING_PAYMENT');
-      checkPayment();
-      paymentPollInterval = setInterval(checkPayment, 3000);
-    }
+    // Start polling immediately
+    setStatus('VERIFYING_PAYMENT');
+    checkPayment();
+    paymentPollInterval = setInterval(checkPayment, 3000);
 
     return () => {
       isMounted = false;
       clearInterval(paymentPollInterval);
       clearInterval(hardwarePollInterval);
     };
-  }, [reference, status]);
+  }, [reference]);
 
   const CheckIcon = () => (
     <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">

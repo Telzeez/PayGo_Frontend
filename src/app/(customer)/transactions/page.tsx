@@ -313,9 +313,17 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
             )}
 
             <div className="flex gap-3 pt-2">
+              {selectedTx.type === 'topup' && selectedTx.reference && (
+                <Link
+                  href={`/verify?reference=${selectedTx.reference}`}
+                  className="flex-1 bg-emerald-600 dark:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl text-xs text-center hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all flex items-center justify-center shadow-sm"
+                >
+                  View Live Status
+                </Link>
+              )}
               <button
                 onClick={() => setSelectedTx(null)}
-                className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all"
+                className="flex-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm"
               >
                 Close Details
               </button>

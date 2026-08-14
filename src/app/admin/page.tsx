@@ -8,11 +8,13 @@ import Link from 'next/link';
 export default function AdminDashboardPage() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const DEVICE_ID = 'DEVICE-001';
 
-  const fetchAdminData = async () => {
-    setLoading(true);
+  const fetchAdminData = async (isPolling = false) => {
+    if (!isPolling && !deviceData) setLoading(true);
+    if (isPolling) setIsRefreshing(true);
     try {
       const res = await devicesApi.getDevice(DEVICE_ID);
       if (res.success) {
@@ -21,13 +23,14 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
+      if (isPolling) setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchAdminData();
-    const interval = setInterval(fetchAdminData, 5000);
+    const interval = setInterval(() => fetchAdminData(true), 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -51,10 +54,10 @@ export default function AdminDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchAdminData}
+            onClick={() => fetchAdminData(false)}
             className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-all flex items-center gap-2 shadow-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 ${loading || isRefreshing ? 'animate-spin' : ''}`}>
               <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
               <path d="M21 3v5h-5"></path>
             </svg>
@@ -70,7 +73,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
         <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm space-y-1">
           <p className="text-xs text-zinc-500 font-medium">Total Registered Meters</p>

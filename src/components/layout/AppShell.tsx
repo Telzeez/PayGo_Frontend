@@ -161,7 +161,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
         <ul className="flex justify-around items-center p-2 max-w-md mx-auto">
-          {navItems.map((item) => {
+          {navItems.filter(item => ['Home', 'Market', 'Recharge', 'History', 'Profile'].includes(item.label)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (

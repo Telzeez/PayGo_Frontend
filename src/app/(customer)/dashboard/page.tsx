@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
+import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 
 export default function Dashboard() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   // Default device ID for prototype
@@ -16,28 +18,30 @@ export default function Dashboard() {
   useEffect(() => {
     let mounted = true;
 
-    const fetchDevice = async () => {
+    const fetchDevice = async (isPolling = false) => {
+      if (isPolling) setIsRefreshing(true);
       try {
         const response = await devicesApi.getDevice(DEVICE_ID);
         if (mounted && response.success) {
           setDeviceData(response);
           setError('');
-        } else if (mounted && !response.success) {
+        } else if (mounted && !response.success && !isPolling) {
           setError('Failed to load device data.');
         }
       } catch (err: any) {
-        if (mounted && !deviceData) {
+        if (mounted && !isPolling) {
           setError(err.message || 'Error communicating with server.');
         }
       } finally {
         if (mounted) {
-          setLoading(false);
+          if (!isPolling) setLoading(false);
+          if (isPolling) setIsRefreshing(false);
         }
       }
     };
 
     fetchDevice();
-    const interval = setInterval(fetchDevice, 5000); // Real-time 5s polling for remaining kWh & hardware updates
+    const interval = setInterval(() => fetchDevice(true), 5000); // Real-time 5s polling for remaining kWh & hardware updates
 
     return () => {
       mounted = false;
@@ -92,13 +96,22 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700">
+      <OnboardingTutorial />
       
       {/* Premium Dashboard Card */}
       <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
-            <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || DEVICE_ID}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || DEVICE_ID}</h2>
+              {isRefreshing && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-zinc-400 animate-spin">
+                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                  <path d="M21 3v5h-5"></path>
+                </svg>
+              )}
+            </div>
           </div>
           
           {status === 'ONLINE' ? (
@@ -117,14 +130,14 @@ export default function Dashboard() {
         <div className="flex flex-col items-center justify-center py-6 mb-2">
           <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase mb-3">Available Balance</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
+            <p className="text-5xl sm:text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
               {Number(balance || 0).toFixed(2)}
             </p>
             <span className="text-2xl font-medium text-zinc-400 dark:text-zinc-500">kWh</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
           <Link href="/recharge" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-500">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />

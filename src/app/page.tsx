@@ -100,9 +100,9 @@ function MarketplaceContent() {
   const [purchasing, setPurchasing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Auto-request location on mount
+  // Auto-load demo location on mount instead of prompting for GPS
   useEffect(() => {
-    requestLocation();
+    useDemoLocation();
   }, []);
 
   const requestLocation = () => {
@@ -537,7 +537,7 @@ function MarketplaceContent() {
                       onClick={() => handleBuyClick(item)}
                       className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-extrabold py-3 px-6 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95 flex items-center gap-2"
                     >
-                      <span>View & Buy</span>
+                      <span>View</span>
                       <ArrowRightIcon className="w-4 h-4" />
                     </button>
                   </div>
@@ -603,7 +603,7 @@ function MarketplaceContent() {
       {showAuthModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div
-            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-7 w-full max-w-md shadow-2xl relative space-y-6 animate-in zoom-in-95 duration-200 text-center"
+            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-7 w-full max-w-md shadow-2xl relative space-y-6 animate-in zoom-in-95 duration-200 text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
@@ -649,7 +649,7 @@ function MarketplaceContent() {
       {selectedListing && isAuthenticated && !showAuthModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
-            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-7 w-full max-w-md shadow-2xl relative space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 sm:p-7 w-full max-w-md shadow-2xl relative space-y-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">

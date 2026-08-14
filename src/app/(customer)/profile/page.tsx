@@ -75,7 +75,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-2xl mx-auto w-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -110,32 +110,32 @@ export default function ProfilePage() {
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xl shrink-0">
             {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
           </div>
-          <div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">{user?.email || 'Customer Account'}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white break-all">{user?.email || 'Customer Account'}</h2>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shrink-0">
                 {user?.role || 'CUSTOMER'}
               </span>
-              <span className="text-xs text-zinc-400">ID: #{user?.id || 1}</span>
+              <span className="text-xs text-zinc-400 shrink-0">ID: #{user?.id || 1}</span>
             </div>
           </div>
         </div>
 
         <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
+          <div className="min-w-0">
             <p className="text-zinc-500">Contact Email</p>
-            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{user?.email || 'N/A'}</p>
+            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 break-all">{user?.email || 'N/A'}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-zinc-500">Phone Number</p>
-            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5">{user?.phone || 'Not configured'}</p>
+            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mt-0.5 break-all">{user?.phone || 'Not configured'}</p>
           </div>
         </div>
       </section>
 
       {/* Assigned Device Card */}
       <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">Assigned Meter Details</h2>
           {device && (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
@@ -152,12 +152,12 @@ export default function ProfilePage() {
         {loading ? (
           <div className="h-16 bg-zinc-100 dark:bg-zinc-900 rounded-2xl animate-pulse"></div>
         ) : (
-          <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 flex items-center justify-between">
-            <div>
+          <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0">
               <p className="text-xs text-zinc-500">Device ID</p>
-              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5">{DEVICE_ID}</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{DEVICE_ID}</p>
             </div>
-            <div className="text-right">
+            <div className="sm:text-right shrink-0">
               <p className="text-xs text-zinc-500">Current Balance</p>
               <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                 {device ? Number(device.balance).toFixed(2) : '0.00'} kWh

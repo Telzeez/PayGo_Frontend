@@ -43,6 +43,10 @@ PayGo is a state-of-the-art Web & PWA interface designed to provide seamless sol
 - **Mobile-First Glassmorphic Design**: 6-item bottom navigation bar for mobile devices, top navigation tabs for desktop displays.
 - **Universal "← Back" Navigation**: Intuitive navigation hierarchy following "Don't Make Me Think" usability principles.
 
+### 9. 🛡️ Compliance & Onboarding
+- **Interactive First-Time Tutorial**: A dynamic 4-step glassmorphic carousel that introduces new users to the dashboard, marketplace, and offline recharge capabilities.
+- **Privacy & Cookie Consent**: Non-intrusive bottom banner adhering to privacy standards, persisting choices to `localStorage` to prevent annoying repeat prompts.
+
 ---
 
 ## 🛠️ Technology Stack

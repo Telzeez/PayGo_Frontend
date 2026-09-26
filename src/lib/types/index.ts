@@ -38,8 +38,10 @@ export interface UserProfile {
 
 export interface AuthResponse {
   success: boolean;
-  token: string;
-  user: UserProfile;
+  token?: string;
+  user?: UserProfile;
+  needsRegistration?: boolean;
+  registrationToken?: string;
 }
 
 export interface PaymentInitiateRequest {

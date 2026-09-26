@@ -12,6 +12,7 @@ export default function VerifyPage() {
   
   const [status, setStatus] = useState<'INITIALIZING' | 'VERIFYING_PAYMENT' | 'WAITING_HARDWARE' | 'CONFIRMED' | 'FAILED'>('INITIALIZING');
   const [kwhAmount, setKwhAmount] = useState<number | null>(null);
+  const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
   const [hardwareStatus, setHardwareStatus] = useState<'PENDING' | 'CONFIRMED' | 'FAILED'>('PENDING');
 
@@ -39,6 +40,9 @@ export default function VerifyPage() {
             const data = (response as any).data || response.transaction?.data;
             if (data && data.kwhAmount) {
               setKwhAmount(data.kwhAmount);
+            }
+            if (data && data.fallbackToken) {
+              setTokenCode(data.fallbackToken);
             }
             setStatus('WAITING_HARDWARE');
             clearInterval(paymentPollInterval);
@@ -209,9 +213,21 @@ export default function VerifyPage() {
             <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
               Your financial balance has been credited. The backend will automatically send energy to your meter as soon as it reconnects online.
             </p>
-            <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">
-              🔑 An <strong>SMS Recovery Token</strong> was also sent to your mobile phone to input manually on the meter keypad if offline.
-            </p>
+            {tokenCode ? (
+              <div className="mt-3 p-3 bg-white dark:bg-[#1A1A1E] rounded-xl border border-amber-200/50 dark:border-amber-500/10">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-1 uppercase tracking-wider">SMS Token Simulation</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-lg font-mono font-bold tracking-widest text-zinc-900 dark:text-white">{tokenCode}</p>
+                </div>
+                <p className="text-[10px] text-amber-700/70 dark:text-amber-500/70 mt-2 leading-tight">
+                  For this prototype demo, the token is displayed above instead of arriving via real SMS. You can input this manually on the meter keypad!
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">
+                🔑 An <strong>SMS Recovery Token</strong> was sent to your mobile phone to input manually on the meter keypad if offline.
+              </p>
+            )}
           </div>
         )}
 

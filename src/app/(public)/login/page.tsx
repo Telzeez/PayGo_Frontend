@@ -4,6 +4,7 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Main page component with Suspense boundary
 export default function AuthPage() {
@@ -33,8 +34,9 @@ function AuthPageContent() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [registrationToken, setRegistrationToken] = useState<string | null>(null);
 
-  const { login, register } = useAuth();
+  const { login, register, registerGoogle, loginWithGoogle } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +45,9 @@ function AuthPageContent() {
     setIsSubmitting(true);
 
     try {
-      if (isLogin) {
+      if (registrationToken) {
+        await registerGoogle({ registrationToken, phone: phone || undefined, role });
+      } else if (isLogin) {
         await login({ email, password });
       } else {
         await register({ email, password, phone: phone || undefined, role });
@@ -133,18 +137,33 @@ function AuthPageContent() {
         </div>
       ) : (
         <div className="animate-in fade-in duration-500">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm font-medium border border-red-100 dark:border-red-500/20 mb-4">
-              {error}
+          {error && !registrationToken && (
+            <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm font-medium border border-red-100 dark:border-red-500/20 mb-4 flex items-start gap-2">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {registrationToken && (
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 p-4 rounded-xl text-sm font-medium border border-emerald-200 dark:border-emerald-500/20 mb-6 flex items-start gap-3 shadow-sm">
+              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-bold text-emerald-800 dark:text-emerald-300 mb-0.5">Google Verification Successful!</p>
+                <p className="text-emerald-600 dark:text-emerald-400 font-normal">Almost there! Please provide your phone number and select an account type to complete your registration.</p>
+              </div>
             </div>
           )}
 
           <div className="flex bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-1 mb-6 border border-zinc-200/50 dark:border-zinc-700/50">
             <button
               type="button"
-              onClick={() => { setIsLogin(true); setError(''); }}
+              onClick={() => { setIsLogin(true); setError(''); setRegistrationToken(null); }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                isLogin
+                isLogin && !registrationToken
                   ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               }`}
@@ -153,9 +172,9 @@ function AuthPageContent() {
             </button>
             <button
               type="button"
-              onClick={() => { setIsLogin(false); setError(''); }}
+              onClick={() => { setIsLogin(false); setError(''); setRegistrationToken(null); }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                !isLogin
+                !isLogin || registrationToken
                   ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               }`}
@@ -165,7 +184,7 @@ function AuthPageContent() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {!isLogin && (
+            {(!isLogin && !registrationToken) && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="fullname">
@@ -180,6 +199,11 @@ function AuthPageContent() {
                     placeholder="John Doe"
                   />
                 </div>
+              </>
+            )}
+
+            {(!isLogin || registrationToken) && (
+              <>
 
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="phone">
@@ -227,37 +251,41 @@ function AuthPageContent() {
               </>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="email">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-shadow text-sm"
-                placeholder="you@example.com"
-              />
-            </div>
+            {!registrationToken && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="email">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-shadow text-sm"
+                    placeholder="you@example.com"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-shadow text-sm"
-                placeholder="••••••••"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="password">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full bg-zinc-50 dark:bg-[#09090B] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-shadow text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </>
+            )}
 
-            {isLogin && (
+            {isLogin && !registrationToken && (
               <div className="flex justify-end mt-[-4px]">
                 <button
                   type="button"
@@ -272,8 +300,54 @@ function AuthPageContent() {
               type="submit"
               className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] mt-2 text-sm"
             >
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {registrationToken ? 'Complete Registration' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
+            
+            {!registrationToken && (
+              <>
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                  <span className="flex-shrink-0 mx-4 text-zinc-400 text-xs font-medium uppercase">Or continue with</span>
+                  <div className="flex-grow border-t border-zinc-200 dark:border-zinc-800"></div>
+                </div>
+
+            <div className="flex justify-center w-full">
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  setError('');
+                  setIsSubmitting(true);
+                  try {
+                    if (credentialResponse.credential) {
+                      const res = await loginWithGoogle(credentialResponse.credential, role);
+                      setIsSubmitting(false);
+                      if (res && res.needsRegistration && res.registrationToken) {
+                        setIsLogin(false);
+                        setRegistrationToken(res.registrationToken);
+                        setError(''); // Clear error state since it's a success
+                      } else {
+                        setIsSuccess(true);
+                        setTimeout(() => {
+                          const destination = role === 'OWNER' ? '/admin' : redirect;
+                          router.push(destination);
+                        }, 1200);
+                      }
+                    }
+                  } catch (err: any) {
+                    setError(err.message || 'Google Authentication failed.');
+                    setIsSubmitting(false);
+                  }
+                }}
+                onError={() => {
+                  setError('Google Authentication failed.');
+                }}
+                useOneTap
+                theme="outline"
+                size="large"
+                shape="rectangular"
+              />
+            </div>
+              </>
+            )}
           </form>
         </div>
       )}

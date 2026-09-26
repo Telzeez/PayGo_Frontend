@@ -22,6 +22,23 @@ export const authApi = {
     });
   },
 
+  loginWithGoogle: async (data: { token: string; role?: string }) => {
+    return apiClient<AuthResponse>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      requireAuth: false,
+    });
+  },
+
+  registerGoogle: async (data: { registrationToken: string; phone?: string; role: string }) => {
+    return apiClient<AuthResponse>('/api/auth/register-google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      requireAuth: false,
+    });
+  },
+
+
   register: async (data: RegisterParams) => {
     return apiClient<AuthResponse>('/api/auth/register', {
       method: 'POST',

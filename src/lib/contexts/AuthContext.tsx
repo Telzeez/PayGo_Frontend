@@ -9,6 +9,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (params: LoginParams) => Promise<void>;
+  loginWithGoogle: (token: string, role?: string) => Promise<{needsRegistration?: boolean, registrationToken?: string} | void>;
+  registerGoogle: (params: { registrationToken: string; phone?: string; role: string }) => Promise<void>;
   register: (params: RegisterParams) => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
@@ -51,6 +53,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (token: string, role?: string): Promise<{needsRegistration?: boolean, registrationToken?: string} | void> => {
+    const res = await authApi.loginWithGoogle({ token, role });
+    if (res.success) {
+      if (res.needsRegistration) {
+        return { needsRegistration: true, registrationToken: res.registrationToken };
+      }
+      if (res.token && res.user) {
+        localStorage.setItem('paygo_token', res.token);
+        setUser(res.user);
+      }
+    }
+  };
+
+  const registerGoogle = async (params: { registrationToken: string; phone?: string; role: string }) => {
+    const res = await authApi.registerGoogle(params);
+    if (res.success && res.token && res.user) {
+      localStorage.setItem('paygo_token', res.token);
+      setUser(res.user);
+    }
+  };
+
   const register = async (params: RegisterParams) => {
     const res = await authApi.register(params);
     if (res.success && res.token && res.user) {
@@ -78,7 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     register,
+    registerGoogle,
     updateProfile,
     logout,
   };

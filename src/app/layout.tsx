@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { CookieConsent } from "@/components/CookieConsent";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -33,10 +34,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} antialiased min-h-screen`}>
       <body className="min-h-screen flex flex-col font-sans">
-        <AuthProvider>
-          {children}
-          <CookieConsent />
-        </AuthProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+          <AuthProvider>
+            {children}
+            <CookieConsent />
+          </AuthProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

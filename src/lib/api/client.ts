@@ -1,4 +1,18 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '' : 'http://localhost:3000');
+function getBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!envUrl) {
+    return typeof window !== 'undefined'
+      ? ''
+      : (process.env.API_URL || 'https://paygo-backend-6w4q.onrender.com').trim().replace(/\/+$/, '').replace(/\/api$/, '');
+  }
+
+  // Remove trailing slashes and trailing /api to prevent duplicate /api segments
+  let sanitized = envUrl.trim().replace(/\/+$/, '');
+  if (sanitized.endsWith('/api')) {
+    sanitized = sanitized.slice(0, -4);
+  }
+  return sanitized;
+}
 
 export class ApiError extends Error {
   public status: number;
@@ -52,7 +66,22 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
     headers,
   };
 
-  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  const baseUrl = getBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  let url: string;
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    url = endpoint;
+  } else if (!baseUrl) {
+    url = cleanEndpoint;
+  } else {
+    // Avoid double /api when endpoint already begins with /api
+    if (baseUrl.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+      url = `${baseUrl.slice(0, -4)}${cleanEndpoint}`;
+    } else {
+      url = `${baseUrl}${cleanEndpoint}`;
+    }
+  }
 
   try {
     const response = await fetch(url, config);

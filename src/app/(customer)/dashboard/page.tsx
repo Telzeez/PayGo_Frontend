@@ -41,7 +41,7 @@ export default function Dashboard() {
     };
 
     fetchDevice();
-    const interval = setInterval(() => fetchDevice(true), 5000); // Real-time 5s polling for remaining kWh & hardware updates
+    const interval = setInterval(() => fetchDevice(true), 3000); // Fast 3s real-time polling for instant status & balance updates
 
     return () => {
       mounted = false;
@@ -86,6 +86,8 @@ export default function Dashboard() {
   }
 
   const { balance, status, deviceId, transactions } = deviceData || {};
+  // Fast offline check: if device hasn't sent a heartbeat within 13 seconds, reflect offline immediately
+  const isMeterOnline = status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -114,7 +116,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          {status === 'ONLINE' ? (
+          {isMeterOnline ? (
              <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                Meter Online

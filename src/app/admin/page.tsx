@@ -30,13 +30,13 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchAdminData();
-    const interval = setInterval(() => fetchAdminData(true), 5000);
+    const interval = setInterval(() => fetchAdminData(true), 3000);
     return () => clearInterval(interval);
   }, []);
 
   const pendingCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'PENDING').length || 0;
   const failedCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'FAILED').length || 0;
-  const isOnline = deviceData?.status === 'ONLINE';
+  const isOnline = deviceData?.status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">

@@ -33,9 +33,9 @@ export default function RegisterPage() {
     try {
       // 2. Pass 'role' directly as a clean variable now that it exists in state
       await register({ email, password, phone, role });
-      router.push('/onboarding');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      router.push(role === 'SELLER' ? '/marketplace/seller' : '/onboarding');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

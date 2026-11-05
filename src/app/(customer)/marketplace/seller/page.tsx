@@ -272,8 +272,8 @@ export default function SellerMarketplacePage() {
               </p>
               {!loadingDevices && accountDevices.length === 0 && (
                 <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
-                  <p className="font-semibold">No non-demo meter is linked to this account.</p>
-                  <p className="mt-1">The shared DEVICE-001 meter is demo-only and will not be assigned to you. Publishing energy requires a non-demo source meter already linked to your account.</p>
+                          <p className="font-semibold">Your seller account is ready, but selling is not available yet.</p>
+                          <p className="mt-1">This prototype does not support self-service meter linking. DEVICE-001 is shared demo hardware and cannot safely be assigned to you. You can explore the seller portal, but you cannot publish a real offer until your own non-demo meter is linked.</p>
                 </div>
               )}
             </div>

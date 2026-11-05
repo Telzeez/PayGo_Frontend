@@ -30,7 +30,7 @@ function AuthPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'BUYER' | 'OWNER'>('BUYER');
+  const [role, setRole] = useState<'BUYER' | 'SELLER'>('BUYER');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -57,8 +57,7 @@ function AuthPageContent() {
       setIsSuccess(true);
 
       setTimeout(() => {
-        const destination = role === 'OWNER' ? '/admin' : redirect;
-        router.push(destination);
+        router.push(redirect);
       }, 1200);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
@@ -237,14 +236,14 @@ function AuthPageContent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setRole('OWNER')}
+                      onClick={() => setRole('SELLER')}
                       className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                        role === 'OWNER'
+                        role === 'SELLER'
                           ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm'
                           : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
                       }`}
                     >
-                      Admin (Owner)
+                      Seller (Prosumer)
                     </button>
                   </div>
                 </div>
@@ -327,8 +326,7 @@ function AuthPageContent() {
                       } else {
                         setIsSuccess(true);
                         setTimeout(() => {
-                          const destination = role === 'OWNER' ? '/admin' : redirect;
-                          router.push(destination);
+                          router.push(redirect);
                         }, 1200);
                       }
                     }

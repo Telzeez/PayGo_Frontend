@@ -36,6 +36,16 @@ export default function BuyerMarketplacePage() {
 
   const [isDemoLocation, setIsDemoLocation] = useState(false);
 
+  useEffect(() => {
+    if (!selectedListing) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedListing]);
+
   // Request HTML5 Browser Location
   const requestLocation = () => {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
@@ -126,12 +136,12 @@ export default function BuyerMarketplacePage() {
       });
 
       if (paymentRes.success && paymentRes.data?.authorization_url) {
-        window.location.href = paymentRes.data.authorization_url;
+        window.location.assign(paymentRes.data.authorization_url);
       } else {
         throw new Error('Failed to initialize payment gateway.');
       }
-    } catch (err: any) {
-      setError(err.message || 'Purchase process failed. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Purchase process failed. Please try again.');
       setPurchasing(false);
     }
   };
@@ -343,7 +353,10 @@ export default function BuyerMarketplacePage() {
                       </div>
 
                       <button
-                        onClick={() => setSelectedListing(item)}
+                        onClick={() => {
+                          setError('');
+                          setSelectedListing(item);
+                        }}
                         className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
                       >
                         Buy Energy
@@ -360,13 +373,16 @@ export default function BuyerMarketplacePage() {
 
       {/* Purchase Confirmation Drawer Modal */}
       {selectedListing && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center overflow-y-auto p-3 sm:p-4 animate-in fade-in duration-200">
           <div 
-            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-purchase-title"
+            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl relative space-y-3 animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-4">
-              <h3 className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+              <h3 id="marketplace-purchase-title" className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
               <button
                 onClick={() => setSelectedListing(null)}
                 className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
@@ -379,7 +395,7 @@ export default function BuyerMarketplacePage() {
             </div>
 
             {/* Breakdown Summary */}
-            <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 space-y-2.5 text-xs">
+            <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-3 space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Seller Source</span>
                 <span className="font-bold text-zinc-900 dark:text-white">{selectedListing.sourceName}</span>
@@ -420,8 +436,14 @@ export default function BuyerMarketplacePage() {
             {/* Telemetry Energy Duration Predictor */}
             <EnergyDurationPredictor purchasedKwh={numKwh} compact={true} />
 
+            {error && (
+              <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+                {error}
+              </p>
+            )}
+
             {/* Total Price Display */}
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-400">Total Purchase Amount</p>
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-300 mt-0.5">₦{totalPrice.toLocaleString()}</p>
@@ -447,7 +469,10 @@ export default function BuyerMarketplacePage() {
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (
-                  <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin"></span>
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin"></span>
+                    <span>Opening checkout…</span>
+                  </>
                 ) : (
                   'Confirm & Pay'
                 )}

@@ -30,7 +30,7 @@ export default function PurchaseDetailPage() {
             res.purchase.status === 'CANCELLED' ||
             res.purchase.status === 'EXPIRED' ||
             (res.purchase.status === 'COMPLETED' &&
-              ['CONFIRMED', 'FAILED'].includes(res.purchase.hardwareStatus));
+              ['CONFIRMED', 'FAILED'].includes(res.purchase.hardwareStatus ?? ''));
           if (terminal && pollInterval) clearInterval(pollInterval);
         } else if (isMounted) {
           setError('Failed to load purchase details.');

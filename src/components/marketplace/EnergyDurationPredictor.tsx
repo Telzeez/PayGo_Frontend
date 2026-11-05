@@ -81,8 +81,8 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
 
   if (compact) {
     return (
-      <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
             <ZapIcon className="w-4 h-4 text-amber-500" />
             <span>ESTIMATED ENERGY DURATION</span>
@@ -110,7 +110,7 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
           </span>
         </div>
 
-        <div className="flex items-baseline justify-between pt-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 pt-1">
           <div>
             <p className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
               ≈ {formatRuntime()}

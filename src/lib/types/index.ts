@@ -26,15 +26,6 @@ export interface DeviceResponse {
   transactions: Transaction[];
 }
 
-export interface AccountDevice {
-  deviceId: string;
-  balance: number;
-  status: DeviceStatus;
-  lastSeenAt: string | null;
-  lastUpdated: string;
-  isSelected: boolean;
-}
-
 export interface UserProfile {
   id: number;
   email: string;
@@ -57,7 +48,6 @@ export interface PaymentInitiateRequest {
   amount: number;
   email: string;
   deviceId: string;
-  marketplacePurchaseId?: number;
 }
 
 export interface PaymentInitiateResponse {
@@ -76,8 +66,8 @@ export interface VerifyTransactionResponse {
   message?: string;
   data?: {
     kwhAmount: number;
-    hardwareStatus: HardwareStatus;
-    deviceId: string;
+    expiresAt: string;
+    used: boolean;
   };
   error?: string;
 }

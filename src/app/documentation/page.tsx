@@ -93,7 +93,7 @@ export default function DocumentationPage() {
     },
     {
       q: "What if my mobile internet connection drops right after I pay?",
-      a: "The transaction status page keeps checking remote meter delivery. You can also return to the dashboard to see the latest meter balance and connection status."
+      a: "PAYGO generates an encrypted 16-digit token code on your confirmation screen and sends it to your mobile phone via SMS. You can type this code manually into your meter's physical keypad."
     },
     {
       q: "Is PAYGO safe for my household electrical appliances?",
@@ -218,7 +218,7 @@ export default function DocumentationPage() {
                   </div>
                   <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800 space-y-1.5">
                     <span className="font-bold text-amber-500">PAYGO Smart Meter</span>
-                    <p className="text-zinc-500">Receives remote energy credit and reports meter balance through the backend service.</p>
+                    <p className="text-zinc-500">Delivers credit over cellular MQTT stream and automatically activates the home's power relay.</p>
                   </div>
                 </div>
               </div>
@@ -378,7 +378,7 @@ export default function DocumentationPage() {
                   </div>
                   <div className="space-y-2 text-zinc-600 dark:text-zinc-300 leading-relaxed">
                     <p>
-                      PAYGO reads Chidi’s smart meter telemetry through the backend API. His physical PZEM sensor measures a real-time household load draw of <strong>380 Watts</strong> (2 standing fans 150W + TV 100W + laptop 65W + bulbs 50W + router 15W).
+                      PAYGO queries Chidi’s active smart meter telemetry stream over MQTT. His physical PZEM sensor measures a real-time household load draw of <strong>380 Watts</strong> (2 standing fans 150W + TV 100W + laptop 65W + bulbs 50W + router 15W).
                     </p>
                     <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-1 font-mono text-[11px]">
                       <div className="flex justify-between text-zinc-500">
@@ -421,12 +421,12 @@ export default function DocumentationPage() {
                     </div>
                     <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold flex items-center gap-1">
                       <CheckCircleIcon className="w-3 h-3 text-emerald-500" />
-                      <span>Remote Delivery</span>
+                      <span>MQTT Delivery Active</span>
                     </span>
                   </div>
                   <div className="space-y-2 text-zinc-600 dark:text-zinc-300 leading-relaxed">
                     <p>
-                      Paystack confirms payment. The server sets transaction status to <strong>Payment: SUCCESSFUL</strong> and sends a 5.0 kWh credit payload to Chidi's smart meter.
+                      Paystack confirms payment. The server sets transaction status to <strong>Payment: SUCCESSFUL</strong> and transmits a 5.0 kWh credit payload via MQTT to Chidi's ESP32 smart meter.
                     </p>
                     <p>
                       The meter's internal relay closes, turning ON electricity immediately. As Chidi uses electricity, the PZEM sensor measures actual consumption in real-time, counting down credit from 5.0 kWh to 0.0 kWh.
@@ -438,10 +438,10 @@ export default function DocumentationPage() {
                 <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 space-y-2">
                   <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2 text-xs">
                     <ShieldCheckIcon className="w-4 h-4 text-amber-500" />
-                    <span>Remote Credit Status</span>
+                    <span>Offline Signal Backup (16-Digit SMS Token)</span>
                   </div>
                   <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
-                    The status page checks the meter transaction and balance. Once the meter balance reflects the purchased energy, the payment is shown as credited.
+                    If cellular signal is temporarily absent, the confirmation screen generates an encrypted 16-digit token (<code className="font-mono font-bold bg-amber-500/10 px-1 py-0.5 rounded text-amber-800 dark:text-amber-300">8492-1039-5821-9940</code>) sent via SMS. Chidi can type this passcode directly into his meter keypad to restore power manually.
                   </p>
                 </div>
 
@@ -483,7 +483,7 @@ export default function DocumentationPage() {
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="space-y-2 mb-6">
               <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Frequently Asked Questions</h2>
-              <p className="text-xs text-zinc-500">Clear answers to common questions about PAYGO marketplace transactions and meters.</p>
+              <p className="text-xs text-zinc-500">Clear answers to common questions about PAYGO marketplace transactions, meters, and tokens.</p>
             </div>
 
             <div className="space-y-3">
@@ -524,7 +524,7 @@ export default function DocumentationPage() {
      │
      ▼
  ESP32 Microcontroller
-     │ (Remote Meter Credit Service)
+     │ (MQTT Publish over Cellular/Wi-Fi)
      ▼
  PAYGO Backend (Node.js / Postgres)
      │ (Telemetry Engine)

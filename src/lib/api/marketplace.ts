@@ -6,6 +6,7 @@ export interface NearbyListing {
   sourceName: string;
   sellerId: number;
   sellerEmail?: string;
+  deviceId: string;
   distanceMeters: number;
   effectiveRadiusMeters: number;
   availableKwh: number;
@@ -26,7 +27,6 @@ export interface SellerSource {
   longitude: number;
   serviceRadiusMeters: number;
   status: string;
-  isDemo?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,8 +42,7 @@ export interface SellerListing {
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
-  isDemo?: boolean;
-  sourceName?: string
+  sourceName: string
 }
 
 export interface MarketplacePurchaseResult {
@@ -61,54 +60,7 @@ export interface MarketplacePurchaseResult {
   createdAt: string;
 }
 
-export interface BuyerMarketplacePurchase extends MarketplacePurchaseResult {
-  updatedAt: string;
-  paystackReference: string | null;
-  hardwareStatus: 'PENDING' | 'CONFIRMED' | 'FAILED' | null;
-  sourceName: string | null;
-  transactionId?: string | null;
-}
-
-export interface MarketplacePayoutAccount {
-  configured: boolean;
-  bankName: string | null;
-  accountName: string | null;
-  accountNumberLast4: string | null;
-  sellerPayoutPercentage: number;
-}
-
-export interface MarketplacePayoutBank {
-  name: string;
-  code: string;
-}
-
 export const marketplaceApi = {
-  getPayoutAccount: async () => {
-    return apiClient<{ success: boolean; account: MarketplacePayoutAccount }>('/api/marketplace/payout-account', {
-      method: 'GET',
-      requireAuth: true,
-    });
-  },
-
-  getPayoutBanks: async () => {
-    return apiClient<{ success: boolean; banks: MarketplacePayoutBank[] }>('/api/marketplace/payout-account/banks', {
-      method: 'GET',
-      requireAuth: true,
-    });
-  },
-
-  savePayoutAccount: async (data: { businessName: string; bankCode: string; accountNumber: string }) => {
-    return apiClient<{
-      success: boolean;
-      message: string;
-      account: MarketplacePayoutAccount;
-    }>('/api/marketplace/payout-account', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-      requireAuth: true,
-    });
-  },
-
   // Discovery
   getNearbyListings: async (latitude: number, longitude: number, radiusMeters?: number) => {
     let url = `/api/marketplace/nearby?latitude=${latitude}&longitude=${longitude}`;
@@ -181,7 +133,6 @@ export const marketplaceApi = {
       kwhRequested: number;
       buyerLatitude: number;
       buyerLongitude: number;
-      buyerDeviceId: string;
     }
   ) => {
     return apiClient<{
@@ -197,14 +148,14 @@ export const marketplaceApi = {
 
   // Buyer Purchases
   getPurchases: async () => {
-    return apiClient<{ success: boolean; purchases: BuyerMarketplacePurchase[] }>('/api/marketplace/purchases', {
+    return apiClient<{ success: boolean; purchases: any[] }>('/api/marketplace/purchases', {
       method: 'GET',
       requireAuth: true,
     });
   },
 
   getPurchaseDetail: async (purchaseId: number) => {
-    return apiClient<{ success: boolean; purchase: BuyerMarketplacePurchase }>(`/api/marketplace/purchases/${purchaseId}`, {
+    return apiClient<{ success: boolean; purchase: any }>(`/api/marketplace/purchases/${purchaseId}`, {
       method: 'GET',
       requireAuth: true,
     });

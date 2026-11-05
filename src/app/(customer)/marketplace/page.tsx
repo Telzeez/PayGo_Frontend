@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
-import { devicesApi } from '@/lib/api/devices';
-import { AccountDevice } from '@/lib/types';
 
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -35,85 +33,11 @@ export default function BuyerMarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
-  const [buyerMeters, setBuyerMeters] = useState<AccountDevice[]>([]);
-  const [selectedBuyerMeterId, setSelectedBuyerMeterId] = useState('');
-  const [loadingBuyerMeters, setLoadingBuyerMeters] = useState(false);
-  const [buyerMeterError, setBuyerMeterError] = useState('');
-
-  const resetBuyerMeterSelection = () => {
-    setBuyerMeters([]);
-    setSelectedBuyerMeterId('');
-    setBuyerMeterError('');
-    setLoadingBuyerMeters(false);
-  };
-
-  const openPurchaseConfirmation = useCallback((listing: NearbyListing) => {
-    resetBuyerMeterSelection();
-    setLoadingBuyerMeters(Boolean(user));
-    setSelectedListing(listing);
-  }, [user]);
-
-  const closePurchaseConfirmation = () => {
-    setSelectedListing(null);
-    resetBuyerMeterSelection();
-  };
 
   const [isDemoLocation, setIsDemoLocation] = useState(false);
 
-  useEffect(() => {
-    if (!selectedListing) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [selectedListing]);
-
-  useEffect(() => {
-    if (!selectedListing || !user) return;
-
-    let active = true;
-    devicesApi.getMyDevices()
-      .then((response) => {
-        if (!active) return;
-        if (!response.success) {
-          throw new Error('Unable to load your registered meters.');
-        }
-        setBuyerMeters(response.devices);
-        const selectedMeter = response.devices.find(
-          (meter) => meter.deviceId === response.selectedDeviceId
-        );
-        setSelectedBuyerMeterId(selectedMeter?.deviceId ?? response.devices[0]?.deviceId ?? '');
-      })
-      .catch((loadError: unknown) => {
-        if (active) {
-          setBuyerMeterError(
-            loadError instanceof Error ? loadError.message : 'Unable to load your registered meters.'
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setLoadingBuyerMeters(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [selectedListing, user]);
-
-  function setDemoLocation() {
-    setLatitude(7.44);
-    setLongitude(3.9);
-    setLocationGranted(true);
-    setIsDemoLocation(true);
-    setLocationStatus('granted');
-    setError('');
-  }
-
   // Request HTML5 Browser Location
   const requestLocation = () => {
-    setError('');
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       setLocationStatus('prompt');
       navigator.geolocation.getCurrentPosition(
@@ -124,28 +48,27 @@ export default function BuyerMarketplacePage() {
           setLocationStatus('granted');
           setIsDemoLocation(false);
         },
-        (positionError) => {
-          setLocationGranted(false);
-          setLatitude(null);
-          setLongitude(null);
-          setListings([]);
-          closePurchaseConfirmation();
-          setLocationStatus(positionError.code === positionError.PERMISSION_DENIED ? 'denied' : 'unavailable');
-          setError(positionError.code === positionError.PERMISSION_DENIED
-            ? 'Location access was denied. Allow GPS or choose the test location explicitly to see eligible offers.'
-            : 'Your location is unavailable. Try GPS again or choose the test location explicitly.');
+        (_err) => {
+          useDemoLocation();
+          setLocationStatus('denied');
         },
         { timeout: 8000 }
       );
     } else {
-      setLocationGranted(false);
+      useDemoLocation();
       setLocationStatus('unavailable');
-      setError('Location is unavailable in this browser. Choose the test location explicitly to see eligible offers.');
     }
   };
 
+  const useDemoLocation = () => {
+    setLatitude(7.44);
+    setLongitude(3.9);
+    setLocationGranted(true);
+    setIsDemoLocation(true);
+  };
+
   // Fetch Nearby Listings when coordinates or radius changes
-  const fetchNearby = useCallback(async () => {
+  const fetchNearby = async () => {
     if (latitude === null || longitude === null) return;
     setLoading(true);
     setError('');
@@ -155,27 +78,23 @@ export default function BuyerMarketplacePage() {
       if (res.success) {
         setListings(res.listings);
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Error fetching nearby listings:', err);
-      setError(err instanceof Error ? err.message : 'Failed to search nearby energy listings.');
+      setError(err.message || 'Failed to search nearby energy listings.');
     } finally {
       setLoading(false);
     }
-  }, [latitude, longitude, radiusMeters]);
+  };
 
   useEffect(() => {
     if (locationGranted && latitude !== null && longitude !== null) {
-      void Promise.resolve().then(fetchNearby);
+      fetchNearby();
     }
-  }, [locationGranted, latitude, longitude, radiusMeters, fetchNearby]);
+  }, [locationGranted, latitude, longitude, radiusMeters]);
 
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
     if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
-    if (!selectedBuyerMeterId || !buyerMeters.some((meter) => meter.deviceId === selectedBuyerMeterId)) {
-      setError('Select a meter linked to your account before continuing.');
-      return;
-    }
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -192,7 +111,6 @@ export default function BuyerMarketplacePage() {
         kwhRequested: numKwh,
         buyerLatitude: latitude,
         buyerLongitude: longitude,
-        buyerDeviceId: selectedBuyerMeterId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -204,16 +122,15 @@ export default function BuyerMarketplacePage() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
-        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.data?.authorization_url) {
-        window.location.assign(paymentRes.data.authorization_url);
+        window.location.href = paymentRes.data.authorization_url;
       } else {
         throw new Error('Failed to initialize payment gateway.');
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Purchase process failed. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Purchase process failed. Please try again.');
       setPurchasing(false);
     }
   };
@@ -268,16 +185,6 @@ export default function BuyerMarketplacePage() {
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mt-1.5 leading-relaxed">
               SolarPayMe uses geographical proximity matching to screen nearby solar energy sellers and minimize physical distribution distance.
             </p>
-            {locationStatus === 'denied' && (
-              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-                GPS permission was denied. You can allow it in browser settings or choose the test location yourself.
-              </p>
-            )}
-            {locationStatus === 'unavailable' && (
-              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-                GPS is unavailable here. Choose the test location only if you want to test the marketplace.
-              </p>
-            )}
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -288,7 +195,7 @@ export default function BuyerMarketplacePage() {
               Allow GPS Location
             </button>
             <button
-              onClick={setDemoLocation}
+              onClick={useDemoLocation}
               className="w-full sm:w-auto bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold py-3.5 px-6 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-xs"
             >
               Use Test Location (7.44, 3.90)
@@ -332,7 +239,7 @@ export default function BuyerMarketplacePage() {
                       <MapPinIcon className="w-3 h-3" /> Use GPS
                     </button>
                     <button
-                      onClick={setDemoLocation}
+                      onClick={useDemoLocation}
                       className="px-3 py-1.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[11px] font-bold transition-all"
                     >
                       Demo Location
@@ -418,7 +325,7 @@ export default function BuyerMarketplacePage() {
                       </div>
 
                       <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-                        {item.sourceName}
+                        {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
                       </h3>
 
                       <p className="text-xs text-zinc-500">
@@ -435,10 +342,7 @@ export default function BuyerMarketplacePage() {
                       </div>
 
                       <button
-                        onClick={() => {
-                          setError('');
-                          openPurchaseConfirmation(item);
-                        }}
+                        onClick={() => setSelectedListing(item)}
                         className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
                       >
                         Buy Energy
@@ -455,18 +359,15 @@ export default function BuyerMarketplacePage() {
 
       {/* Purchase Confirmation Drawer Modal */}
       {selectedListing && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center overflow-y-auto p-3 sm:p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="marketplace-purchase-title"
-            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 sm:p-5 w-full max-w-md shadow-2xl relative space-y-3 animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain"
+            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
-              <h3 id="marketplace-purchase-title" className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-4">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
               <button
-                onClick={closePurchaseConfirmation}
+                onClick={() => setSelectedListing(null)}
                 className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -477,7 +378,7 @@ export default function BuyerMarketplacePage() {
             </div>
 
             {/* Breakdown Summary */}
-            <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-3 space-y-2 text-xs">
+            <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 space-y-2.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Seller Source</span>
                 <span className="font-bold text-zinc-900 dark:text-white">{selectedListing.sourceName}</span>
@@ -486,50 +387,14 @@ export default function BuyerMarketplacePage() {
                 <span className="text-zinc-500">Distance</span>
                 <span className="font-bold text-amber-600">{selectedListing.distanceMeters} meters</span>
               </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-zinc-500">Seller&apos;s energy source</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Separate from your meter</span>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Device ID</span>
+                <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedListing.deviceId}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tariff Rate</span>
                 <span className="font-bold text-zinc-900 dark:text-white">₦{selectedListing.pricePerKwh}/kWh</span>
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="buyer-destination-meter" className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                Credit energy to your meter
-              </label>
-              <select
-                id="buyer-destination-meter"
-                value={selectedBuyerMeterId}
-                onChange={(event) => setSelectedBuyerMeterId(event.target.value)}
-                disabled={loadingBuyerMeters || buyerMeters.length === 0 || purchasing}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 font-mono text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
-              >
-                <option value="">
-                  {loadingBuyerMeters ? 'Loading your linked meters…' : 'Select your meter'}
-                </option>
-                {buyerMeters.map((meter) => (
-                  <option key={meter.deviceId} value={meter.deviceId}>
-                    {meter.deviceId}{meter.isSelected ? ' (account default)' : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                This is your destination meter. It is not the prosumer&apos;s energy-source meter.
-              </p>
-              {!loadingBuyerMeters && buyerMeters.length === 0 && (
-                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-                  <p className="font-semibold">No meter is linked to your account yet.</p>
-                  <p className="mt-1">
-                    Meter linking is paused for this prototype, so you cannot complete a marketplace purchase without a meter already linked to your account. The shared demo meter and the seller&apos;s meter are not buyer destination meters.
-                  </p>
-                </div>
-              )}
-              {buyerMeterError && (
-                <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{buyerMeterError}</p>
-              )}
             </div>
 
             {/* kWh Input */}
@@ -554,14 +419,8 @@ export default function BuyerMarketplacePage() {
             {/* Telemetry Energy Duration Predictor */}
             <EnergyDurationPredictor purchasedKwh={numKwh} compact={true} />
 
-            {error && (
-              <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-                {error}
-              </p>
-            )}
-
             {/* Total Price Display */}
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-3 flex items-center justify-between">
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-400">Total Purchase Amount</p>
                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-300 mt-0.5">₦{totalPrice.toLocaleString()}</p>
@@ -575,7 +434,7 @@ export default function BuyerMarketplacePage() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={closePurchaseConfirmation}
+                onClick={() => setSelectedListing(null)}
                 className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
               >
                 Cancel
@@ -583,14 +442,11 @@ export default function BuyerMarketplacePage() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || loadingBuyerMeters || buyerMeters.length === 0 || !selectedBuyerMeterId || numKwh <= 0}
+                disabled={purchasing || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (
-                  <>
-                    <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin"></span>
-                    <span>Opening checkout…</span>
-                  </>
+                  <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin"></span>
                 ) : (
                   'Confirm & Pay'
                 )}

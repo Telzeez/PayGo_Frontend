@@ -20,11 +20,13 @@ export default function ProfilePage() {
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
 
+  const DEVICE_ID = 'DEVICE-001';
+
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const res = await devicesApi.getSelectedDevice();
-        if (res?.success) {
+        const res = await devicesApi.getDevice(DEVICE_ID);
+        if (res.success) {
           setDevice(res);
         }
       } catch (err) {
@@ -142,7 +144,7 @@ export default function ProfilePage() {
                 : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${device.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
-              {device ? `Meter ${device.status}` : 'No meter linked'}
+              Meter {device.status}
             </span>
           )}
         </div>
@@ -153,7 +155,7 @@ export default function ProfilePage() {
           <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs text-zinc-500">Device ID</p>
-              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{device?.deviceId || 'No meter linked'}</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{DEVICE_ID}</p>
             </div>
             <div className="sm:text-right shrink-0">
               <p className="text-xs text-zinc-500">Current Balance</p>
@@ -241,7 +243,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  Phone Number
+                  Phone Number (SMS Token Delivery)
                 </label>
                 <input
                   type="tel"

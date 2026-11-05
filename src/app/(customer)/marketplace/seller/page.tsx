@@ -1,28 +1,22 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
-import { devicesApi } from '@/lib/api/devices';
-import { AccountDevice } from '@/lib/types';
-import PayoutAccountForm from '@/components/admin/PayoutAccountForm';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
 
 export default function SellerMarketplacePage() {
-  const { user, becomeSeller, isLoading: authLoading } = useAuth();
-  const hasSellerAccess = Boolean(user?.isSeller || user?.role.toUpperCase() === 'SELLER');
+  const { user } = useAuth();
+
   const [sources, setSources] = useState<SellerSource[]>([]);
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [accountDevices, setAccountDevices] = useState<AccountDevice[]>([]);
-  const [loadingDevices, setLoadingDevices] = useState(true);
-  const [enablingSeller, setEnablingSeller] = useState(false);
 
   // New Source Form
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
-  const [deviceId, setDeviceId] = useState('');
+  const [deviceId, setDeviceId] = useState('DEVICE-001');
   const [sourceLat, setSourceLat] = useState('7.4400');
   const [sourceLon, setSourceLon] = useState('3.9000');
   const [serviceRadius, setServiceRadius] = useState('500');
@@ -33,55 +27,37 @@ export default function SellerMarketplacePage() {
   const [availableKwh, setAvailableKwh] = useState('10');
   const [pricePerKwh, setPricePerKwh] = useState('250');
   const [creatingListing, setCreatingListing] = useState(false);
-  const sellableSources = sources.filter((source) => !source.isDemo);
 
-  const fetchData = useCallback(async () => {
-    if (!hasSellerAccess) {
-      setLoading(false);
-      setLoadingDevices(false);
-      return;
-    }
-
+  const fetchData = async () => {
+    setLoading(true);
+    setError('');
     try {
-      const [sourcesRes, listingsRes, devicesRes] = await Promise.all([
+      const [sourcesRes, listingsRes] = await Promise.all([
         marketplaceApi.getSellerSources(),
         marketplaceApi.getSellerListings(),
-        devicesApi.getMyDevices(),
       ]);
 
       if (sourcesRes.success) {
         setSources(sourcesRes.sources);
-        const sellableSources = sourcesRes.sources.filter((source) => !source.isDemo);
-        setSelectedSourceId((selectedId) => (
-          sellableSources.some((source) => source.id.toString() === selectedId)
-            ? selectedId
-            : sellableSources[0]?.id.toString() ?? ''
-        ));
+        if (sourcesRes.sources.length > 0 && !selectedSourceId) {
+          setSelectedSourceId(sourcesRes.sources[0].id.toString());
+        }
       }
 
       if (listingsRes.success) {
         setListings(listingsRes.listings);
       }
-      if (devicesRes.success) {
-        setAccountDevices(devicesRes.devices);
-        setDeviceId((currentDeviceId) => (
-          devicesRes.devices.some((device) => device.deviceId === currentDeviceId)
-            ? currentDeviceId
-            : devicesRes.selectedDeviceId ?? devicesRes.devices[0]?.deviceId ?? ''
-        ));
-      }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Error fetching seller marketplace data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load seller information.');
+      setError(err.message || 'Failed to load seller information.');
     } finally {
       setLoading(false);
-      setLoadingDevices(false);
     }
-  }, [hasSellerAccess]);
+  };
 
   useEffect(() => {
-    void Promise.resolve().then(fetchData);
-  }, [fetchData]);
+    fetchData();
+  }, []);
 
   const handleCreateSource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,8 +78,8 @@ export default function SellerMarketplacePage() {
         setSuccess(`Energy Source "${res.source.name}" registered successfully!`);
         fetchData();
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to register energy source.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to register energy source.');
     } finally {
       setCreatingSource(false);
     }
@@ -131,8 +107,8 @@ export default function SellerMarketplacePage() {
         setSuccess('Energy listing published to nearby buyers!');
         fetchData();
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to publish listing.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to publish listing.');
     } finally {
       setCreatingListing(false);
     }
@@ -143,21 +119,8 @@ export default function SellerMarketplacePage() {
     try {
       await marketplaceApi.toggleListingStatus(listingId, action);
       fetchData();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : `Failed to ${action} listing.`);
-    }
-  };
-
-  const handleBecomeSeller = async () => {
-    setError('');
-    setEnablingSeller(true);
-    try {
-      await becomeSeller();
-      setSuccess('Seller tools are enabled on your existing account. No meter has been assigned.');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unable to enable seller tools.');
-    } finally {
-      setEnablingSeller(false);
+    } catch (err: any) {
+      setError(err.message || `Failed to ${action} listing.`);
     }
   };
 
@@ -204,29 +167,6 @@ export default function SellerMarketplacePage() {
         </div>
       )}
 
-      {authLoading ? (
-        <div className="rounded-3xl border border-zinc-200/60 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-800/60 dark:bg-[#121214] dark:text-zinc-400" role="status">
-          Loading your account…
-        </div>
-      ) : !hasSellerAccess ? (
-        <section className="rounded-3xl border border-zinc-200/60 bg-white p-8 text-center shadow-sm dark:border-zinc-800/60 dark:bg-[#121214]">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Sell energy with this account</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
-            Enable seller tools without creating a second account. This does not assign a meter or give you access to anyone else&apos;s device.
-          </p>
-          <button
-            type="button"
-            onClick={handleBecomeSeller}
-            disabled={enablingSeller}
-            className="mt-5 rounded-xl bg-amber-500 px-5 py-3 text-xs font-bold text-zinc-950 transition-colors hover:bg-amber-400 disabled:opacity-50"
-          >
-            {enablingSeller ? 'Enabling seller tools…' : 'Enable seller tools'}
-          </button>
-        </section>
-      ) : (
-        <>
-      <PayoutAccountForm />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Step 1: Register Energy Source */}
         <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
@@ -249,33 +189,15 @@ export default function SellerMarketplacePage() {
             </div>
 
             <div>
-              <label htmlFor="seller-meter" className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Your PAYGO Meter</label>
-              <select
-                id="seller-meter"
+              <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">PAYGO Meter Device ID</label>
+              <input
+                type="text"
                 value={deviceId}
                 onChange={(e) => setDeviceId(e.target.value)}
                 required
-                disabled={loadingDevices || accountDevices.length === 0}
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white disabled:opacity-60"
-              >
-                <option value="">
-                  {loadingDevices ? 'Loading your linked meters…' : 'Select a meter linked to your account'}
-                </option>
-                {accountDevices.map((device) => (
-                  <option key={device.deviceId} value={device.deviceId}>
-                    {device.deviceId}{device.isSelected ? ' (selected)' : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-zinc-400 mt-1.5">
-                Choose the registered meter connected to the energy source you are listing. This is your source meter, not a buyer&apos;s destination meter.
-              </p>
-              {!loadingDevices && accountDevices.length === 0 && (
-                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
-                          <p className="font-semibold">Your seller account is ready, but selling is not available yet.</p>
-                          <p className="mt-1">This prototype does not support self-service meter linking. DEVICE-001 is shared demo hardware and cannot safely be assigned to you. You can explore the seller portal, but you cannot publish a real offer until your own non-demo meter is linked.</p>
-                </div>
-              )}
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white"
+                placeholder="DEVICE-001"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -318,7 +240,7 @@ export default function SellerMarketplacePage() {
 
             <button
               type="submit"
-              disabled={creatingSource || loadingDevices || accountDevices.length === 0}
+              disabled={creatingSource}
               className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
             >
               {creatingSource ? 'Registering Source...' : 'Register Energy Source'}
@@ -333,11 +255,9 @@ export default function SellerMarketplacePage() {
             <h2 className="text-base font-bold text-zinc-900 dark:text-white">Publish Energy Listing</h2>
           </div>
 
-          {sellableSources.length === 0 ? (
+          {sources.length === 0 ? (
             <div className="text-center py-10 text-zinc-400 text-xs">
-              {sources.length > 0
-                ? 'Your existing energy sources use the shared demo meter and cannot be published. Link a non-demo meter to create a marketplace offer.'
-                : 'Register an energy source first on the left to publish listings for nearby buyers.'}
+              Register an energy source first on the left to publish listings for nearby buyers.
             </div>
           ) : (
             <form onSubmit={handleCreateListing} className="space-y-3.5 text-xs">
@@ -348,9 +268,9 @@ export default function SellerMarketplacePage() {
                   onChange={(e) => setSelectedSourceId(e.target.value)}
                   className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white"
                 >
-                  {sellableSources.map((s) => (
+                  {sources.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}{s.isDemo ? ' (demo only)' : ''} ({s.deviceId} — Radius: {s.serviceRadiusMeters}m)
+                      {s.name} ({s.deviceId} — Radius: {s.serviceRadiusMeters}m)
                     </option>
                   ))}
                 </select>
@@ -425,14 +345,8 @@ export default function SellerMarketplacePage() {
                     >
                       {item.status}
                     </span>
-                    {item.isDemo && (
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-                        DEMO ONLY
-                      </span>
-                    )}
                   </div>
                   <p className="text-xs text-zinc-500 mt-1">
-                    {item.sourceName && `${item.sourceName} · `}
                     Listed: <span className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(item.availableKwh).toFixed(2)} kWh</span> | Reserved: <span className="font-semibold text-amber-600">{Number(item.reservedKwh).toFixed(2)} kWh</span>
                   </p>
                 </div>
@@ -446,8 +360,6 @@ export default function SellerMarketplacePage() {
 
                   <button
                     onClick={() => handleToggleListing(item.id, item.status)}
-                    disabled={item.isDemo && item.status !== 'ACTIVE'}
-                    hidden={item.isDemo && item.status !== 'ACTIVE'}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                       item.status === 'ACTIVE'
                         ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
@@ -462,8 +374,6 @@ export default function SellerMarketplacePage() {
           </div>
         )}
       </section>
-        </>
-      )}
     </div>
   );
 }

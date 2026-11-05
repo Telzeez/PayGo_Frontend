@@ -34,8 +34,8 @@ const steps = [
     ),
   },
   {
-    title: "Remote Meter Credit",
-    description: "Track your meter's connection and energy balance from the dashboard. Payment status updates as remote credit reaches your meter.",
+    title: "Instant Offline Recharge",
+    description: "Need energy while your meter has no internet? Generate a 16-digit Token from the Recharge tab and punch it directly into your physical meter keypad.",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-amber-500">
         <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2v1l2.22 4.15C21 13 20 22 11 20z"/>

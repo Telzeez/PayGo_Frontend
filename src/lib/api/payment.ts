@@ -11,7 +11,7 @@ export const paymentApi = {
   },
 
   verify: async (reference: string) => {
-    return apiClient<VerifyTransactionResponse>(`/api/transactions/verify/${encodeURIComponent(reference)}`, {
+    return apiClient<{ success: boolean; transaction: any }>(`/api/transactions/verify/${encodeURIComponent(reference)}`, {
       method: 'GET',
       requireAuth: true,
     });

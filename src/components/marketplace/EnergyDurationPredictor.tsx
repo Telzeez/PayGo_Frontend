@@ -81,8 +81,8 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
 
   if (compact) {
     return (
-      <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
             <ZapIcon className="w-4 h-4 text-amber-500" />
             <span>ESTIMATED ENERGY DURATION</span>
@@ -110,7 +110,7 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
           </span>
         </div>
 
-        <div className="flex flex-wrap items-baseline justify-between gap-2 pt-1">
+        <div className="flex items-baseline justify-between pt-1">
           <div>
             <p className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
               ≈ {formatRuntime()}
@@ -276,7 +276,7 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
               </span>
             </div>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {tierSource === 'live_meter' && 'Reading measured electrical power draw from the buyer’s meter through the backend service.'}
+              {tierSource === 'live_meter' && 'Reading measured electrical power draw directly from buyer’s physical meter via ESP32 MQTT telemetry.'}
               {tierSource === 'meter_history' && 'Calculated from historical consumption data over buyer’s logged transaction timeline.'}
               {tierSource === 'appliances' && 'Fallback load estimator for new customers without prior hardware usage history.'}
             </p>

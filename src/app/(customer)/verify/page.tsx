@@ -3,97 +3,122 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { paymentApi } from '@/lib/api/payment';
+import { devicesApi } from '@/lib/api/devices';
 import Link from 'next/link';
 
-function CheckIcon() {
-  return (
+export default function VerifyPage() {
+  const searchParams = useSearchParams();
+  const reference = searchParams.get('reference') || searchParams.get('trxref');
+  
+  const [status, setStatus] = useState<'INITIALIZING' | 'VERIFYING_PAYMENT' | 'WAITING_HARDWARE' | 'CONFIRMED' | 'FAILED'>('INITIALIZING');
+  const [kwhAmount, setKwhAmount] = useState<number | null>(null);
+  const [tokenCode, setTokenCode] = useState<string | null>(null);
+  const [deviceStatus, setDeviceStatus] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
+  const [hardwareStatus, setHardwareStatus] = useState<'PENDING' | 'CONFIRMED' | 'FAILED'>('PENDING');
+
+  // Default device ID for prototype
+  const DEVICE_ID = 'DEVICE-001';
+
+  useEffect(() => {
+    if (!reference) {
+      setStatus('FAILED');
+      return;
+    }
+
+    let isMounted = true;
+    let paymentPollInterval: NodeJS.Timeout;
+    let hardwarePollInterval: NodeJS.Timeout;
+
+    let pollCount = 0;
+    const checkPayment = async () => {
+      pollCount++;
+      try {
+        const response = await paymentApi.verify(reference);
+        if (response.success || (response as any).status === 'success') {
+          // Payment is successful in the backend DB!
+          if (isMounted) {
+            const data = (response as any).data || response.transaction?.data;
+            if (data && data.kwhAmount) {
+              setKwhAmount(data.kwhAmount);
+            }
+            if (data && data.fallbackToken) {
+              setTokenCode(data.fallbackToken);
+            }
+            setStatus('WAITING_HARDWARE');
+            clearInterval(paymentPollInterval);
+            
+            // Start polling hardware status
+            hardwarePollInterval = setInterval(checkHardware, 3000);
+            checkHardware(); // immediate check
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Payment verify error:", error);
+      }
+
+      // If webhook is delayed beyond 12 seconds, advance to hardware waiting state so user gets status card
+      if (pollCount >= 4 && isMounted) {
+        setStatus('WAITING_HARDWARE');
+        clearInterval(paymentPollInterval);
+        hardwarePollInterval = setInterval(checkHardware, 3000);
+        checkHardware();
+      }
+    };
+
+    const checkHardware = async () => {
+      try {
+        const deviceRes = await devicesApi.getDevice(DEVICE_ID);
+        if (deviceRes.success) {
+          if (isMounted && deviceRes.status) {
+            setDeviceStatus(deviceRes.status as 'ONLINE' | 'OFFLINE');
+          }
+          if (deviceRes.transactions) {
+            const tx = deviceRes.transactions.find(t => t.reference === reference);
+            if (tx) {
+              setHardwareStatus(tx.hardwareStatus);
+              if (tx.hardwareStatus === 'CONFIRMED') {
+                if (isMounted) setStatus('CONFIRMED');
+                clearInterval(hardwarePollInterval);
+              } else if (tx.hardwareStatus === 'FAILED') {
+                if (isMounted) setStatus('FAILED');
+                clearInterval(hardwarePollInterval);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Hardware verify error:", error);
+      }
+    };
+
+    // Start polling immediately
+    setStatus('VERIFYING_PAYMENT');
+    checkPayment();
+    paymentPollInterval = setInterval(checkPayment, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(paymentPollInterval);
+      clearInterval(hardwarePollInterval);
+    };
+  }, [reference]);
+
+  const CheckIcon = () => (
     <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
     </div>
   );
-}
 
-function FailureIcon() {
-  return (
-    <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white shrink-0">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
-        <path d="M18 6 6 18M6 6l12 12"></path>
-      </svg>
-    </div>
+  const Spinner = () => (
+    <div className="w-5 h-5 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin shrink-0"></div>
   );
-}
 
-function Spinner() {
-  return <div className="w-5 h-5 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin shrink-0"></div>;
-}
-
-function Waiting() {
-  return <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 shrink-0"></div>;
-}
-
-export default function VerifyPage() {
-  const searchParams = useSearchParams();
-  const reference = searchParams.get('reference') || searchParams.get('trxref');
-  
-  const [status, setStatus] = useState<'INITIALIZING' | 'VERIFYING_PAYMENT' | 'WAITING_HARDWARE' | 'CONFIRMED' | 'FAILED' | 'PAYMENT_FAILED'>(
-    reference ? 'VERIFYING_PAYMENT' : 'PAYMENT_FAILED'
+  const Waiting = () => (
+    <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 shrink-0"></div>
   );
-  const [kwhAmount, setKwhAmount] = useState<number | null>(null);
-  useEffect(() => {
-    if (!reference) {
-      return;
-    }
-
-    let isMounted = true;
-    let checkingPayment = false;
-
-    const checkPayment = async () => {
-      if (checkingPayment || !isMounted) return;
-      checkingPayment = true;
-      try {
-        const response = await paymentApi.verify(reference);
-        if (!isMounted) return;
-        if (response.status === 'failed') {
-          setStatus('PAYMENT_FAILED');
-          if (paymentPollInterval) clearInterval(paymentPollInterval);
-          return;
-        }
-        if (response.status === 'success' && response.data) {
-          const transactionKwh = Number(response.data.kwhAmount);
-          if (Number.isFinite(transactionKwh) && transactionKwh > 0) {
-            setKwhAmount(transactionKwh);
-          }
-          if (response.data.hardwareStatus === 'CONFIRMED') {
-            setStatus('CONFIRMED');
-            if (paymentPollInterval) clearInterval(paymentPollInterval);
-          } else if (response.data.hardwareStatus === 'FAILED') {
-            setStatus('FAILED');
-            if (paymentPollInterval) clearInterval(paymentPollInterval);
-          } else {
-            setStatus('WAITING_HARDWARE');
-          }
-        } else {
-          setStatus('VERIFYING_PAYMENT');
-        }
-      } catch (error) {
-        console.error("Payment verify error:", error);
-      } finally {
-        checkingPayment = false;
-      }
-    };
-
-    const paymentPollInterval = setInterval(() => {
-      void checkPayment();
-    }, 3000);
-    void checkPayment();
-
-    return () => {
-      isMounted = false;
-      clearInterval(paymentPollInterval);
-    };
-  }, [reference]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-md mx-auto">
@@ -113,13 +138,13 @@ export default function VerifyPage() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">Energy transaction</p>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-white">{DEVICE_ID}</p>
               <p className="text-xs text-zinc-500">Ref: {reference?.substring(0, 10)}...</p>
             </div>
           </div>
-          {kwhAmount !== null && (
+          {kwhAmount && (
             <div className="text-right">
-              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+{kwhAmount.toFixed(2)}</p>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+{Number(kwhAmount).toFixed(2)}</p>
               <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">kWh</p>
             </div>
           )}
@@ -130,53 +155,39 @@ export default function VerifyPage() {
           <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-zinc-100 dark:bg-zinc-800 -z-10"></div>
           
           <div className="flex items-start gap-4">
-            {status === 'PAYMENT_FAILED'
-              ? <FailureIcon />
-              : status === 'INITIALIZING' || status === 'VERIFYING_PAYMENT' ? <Spinner /> : <CheckIcon />}
+            {status === 'INITIALIZING' || status === 'VERIFYING_PAYMENT' ? <Spinner /> : <CheckIcon />}
             <div>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                {status === 'PAYMENT_FAILED' ? 'Payment not confirmed' : 'Payment Received'}
-              </p>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Payment Received</p>
               <p className="text-xs text-zinc-500 mt-0.5">Verifying transaction with Paystack.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-4">
-            {status === 'PAYMENT_FAILED'
-              ? <FailureIcon />
-              : status === 'VERIFYING_PAYMENT' || status === 'INITIALIZING' ? <Waiting /> : <CheckIcon />}
+            {status === 'VERIFYING_PAYMENT' || status === 'INITIALIZING' ? <Waiting /> : <CheckIcon />}
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Financial Credit</p>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                {status === 'PAYMENT_FAILED' ? 'No credit has been confirmed for this payment.' : 'Your internal ledger has been funded.'}
-              </p>
+              <p className="text-xs text-zinc-500 mt-0.5">Your internal ledger has been funded.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-4">
-            {status === 'WAITING_HARDWARE'
-              ? <Spinner />
-              : status === 'FAILED' || status === 'PAYMENT_FAILED'
-                ? <FailureIcon />
-                : status === 'CONFIRMED' ? <CheckIcon /> : <Waiting />}
+            {status === 'WAITING_HARDWARE' ? <Spinner /> : (status === 'CONFIRMED' || status === 'FAILED' ? <CheckIcon /> : <Waiting />)}
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Remote Meter Credit</p>
               <p className="text-xs text-zinc-500 mt-0.5">
-                {status === 'WAITING_HARDWARE'
-                  ? 'Waiting for the remote meter service to confirm delivery.'
-                  : 'Credit delivery status will be updated here.'}
+                {deviceStatus === 'OFFLINE' ? 'Meter is offline. Command queued for auto-sync.' : 'Dispatching credit command via MQTT.'}
               </p>
             </div>
           </div>
 
           <div className="flex items-start gap-4">
-            {status === 'CONFIRMED' ? <CheckIcon /> : status === 'FAILED' ? <FailureIcon /> : <Waiting />}
+            {status === 'WAITING_HARDWARE' ? <Waiting /> : (status === 'CONFIRMED' ? <CheckIcon /> : (status === 'FAILED' ? <Waiting /> : <Waiting />))}
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Hardware Confirmation</p>
               <p className="text-xs text-zinc-500 mt-0.5">
-                {status === 'CONFIRMED'
-                  ? 'Meter has confirmed the credit.'
-                  : status === 'FAILED' ? 'Meter credit could not be confirmed.' : 'Waiting for meter acknowledgement.'}
+                {status === 'CONFIRMED' 
+                  ? 'Meter has confirmed the credit.' 
+                  : (deviceStatus === 'OFFLINE' ? 'Waiting for meter to reconnect online.' : 'Waiting for meter acknowledgement.')}
               </p>
             </div>
           </div>
@@ -185,13 +196,11 @@ export default function VerifyPage() {
         {status === 'CONFIRMED' && (
           <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-5 text-center mb-6">
             <h3 className="text-emerald-800 dark:text-emerald-400 font-bold mb-1">Recharge Confirmed</h3>
-            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">
-              {kwhAmount !== null ? `${kwhAmount.toFixed(2)} kWh has` : 'Energy credit has'} been confirmed.
-            </p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">{Number(kwhAmount).toFixed(2)} kWh has been credited to {DEVICE_ID}.</p>
           </div>
         )}
 
-        {status === 'WAITING_HARDWARE' && (
+        {status === 'WAITING_HARDWARE' && deviceStatus === 'OFFLINE' && (
           <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-5 text-left mb-6 space-y-2">
             <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-sm">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0">
@@ -199,20 +208,26 @@ export default function VerifyPage() {
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
               </svg>
-              <span>Payment Successful (Credit Pending)</span>
+              <span>Payment Successful (Meter Offline)</span>
             </div>
             <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
-              Your payment was received. Remote meter credit will be confirmed when the meter service reports successful delivery.
+              Your financial balance has been credited. The backend will automatically send energy to your meter as soon as it reconnects online.
             </p>
-          </div>
-        )}
-
-        {status === 'PAYMENT_FAILED' && (
-          <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl p-5 text-center mb-6">
-            <h3 className="text-red-800 dark:text-red-400 font-bold mb-1">Payment Not Confirmed</h3>
-            <p className="text-xs text-red-700 dark:text-red-500 font-medium">
-              Check your transaction history or contact support before trying again.
-            </p>
+            {tokenCode ? (
+              <div className="mt-3 p-3 bg-white dark:bg-[#1A1A1E] rounded-xl border border-amber-200/50 dark:border-amber-500/10">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-1 uppercase tracking-wider">SMS Token Simulation</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-lg font-mono font-bold tracking-widest text-zinc-900 dark:text-white">{tokenCode}</p>
+                </div>
+                <p className="text-[10px] text-amber-700/70 dark:text-amber-500/70 mt-2 leading-tight">
+                  For this prototype demo, the token is displayed above instead of arriving via real SMS. You can input this manually on the meter keypad!
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">
+                🔑 An <strong>SMS Recovery Token</strong> was sent to your mobile phone to input manually on the meter keypad if offline.
+              </p>
+            )}
           </div>
         )}
 
@@ -220,7 +235,7 @@ export default function VerifyPage() {
           <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl p-5 text-center mb-6">
             <h3 className="text-red-800 dark:text-red-400 font-bold mb-1">Recharge Needs Attention</h3>
             <p className="text-xs text-red-700 dark:text-red-500 font-medium">
-              Payment was received, but remote meter credit could not be verified. Check the meter connection and refresh the transaction status.
+              Payment was received, but meter credit could not be verified automatically. Please check your SMS for your 16-digit token code.
             </p>
           </div>
         )}
@@ -235,3 +250,4 @@ export default function VerifyPage() {
     </div>
   );
 }
+

@@ -12,25 +12,15 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'PENDING' | 'FAILED' | 'TOPUP' | 'CONSUMPTION'>('ALL');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
-  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const DEVICE_ID = 'DEVICE-001';
 
   const fetchTransactions = async () => {
     setLoading(true);
     setError(null);
     try {
-      const accountDevices = await devicesApi.getMyDevices();
-      if (!accountDevices.success) {
-        throw new Error('Failed to load your linked meters.');
-      }
-      if (!accountDevices.selectedDeviceId) {
-        setTransactions([]);
-        setDeviceId(null);
-        return;
-      }
-      const res = await devicesApi.getDevice(accountDevices.selectedDeviceId);
+      const res = await devicesApi.getDevice(DEVICE_ID);
       if (res.success && res.transactions) {
         setTransactions(res.transactions);
-        setDeviceId(res.deviceId);
       } else {
         setError('Failed to load transaction history.');
       }
@@ -125,9 +115,7 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Transaction History</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              {deviceId
-                ? <>Real-time ledger of energy purchases and hardware credits for <span className="font-semibold text-zinc-700 dark:text-zinc-300">{deviceId}</span></>
-                : 'No meter is linked to your account yet.'}
+              Real-time ledger of energy purchases and hardware credits for <span className="font-semibold text-zinc-700 dark:text-zinc-300">{DEVICE_ID}</span>
             </p>
           </div>
         </div>
@@ -228,11 +216,7 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold text-zinc-900 dark:text-white">
-                      {tx.type === 'topup'
-                        ? Number(tx.amount) > 0
-                          ? `₦${Number(tx.amount).toLocaleString()}`
-                          : 'Energy Credit'
-                        : 'Meter Consumption'}
+                      {tx.type === 'topup' ? `₦${Number(tx.amount || 0).toLocaleString()}` : 'Meter Consumption'}
                     </p>
                   </div>
                   <p className="text-xs text-zinc-500 mt-0.5">{formatDate(tx.timestamp)}</p>
@@ -290,14 +274,8 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-zinc-500 font-medium">
-                  {selectedTx.type === 'topup' && Number(selectedTx.amount) > 0 ? 'Amount Paid' : 'Amount'}
-                </p>
-                <p className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">
-                  {selectedTx.type === 'topup' && Number(selectedTx.amount) > 0
-                    ? `₦${Number(selectedTx.amount).toLocaleString()}`
-                    : '—'}
-                </p>
+                <p className="text-xs text-zinc-500 font-medium">Amount Paid</p>
+                <p className="text-lg font-bold text-zinc-900 dark:text-white mt-0.5">₦{Number(selectedTx.amount || 0).toLocaleString()}</p>
               </div>
             </div>
 
@@ -330,7 +308,7 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
 
             {selectedTx.hardwareStatus === 'PENDING' && (
               <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-400 leading-relaxed">
-                ℹ️ <strong>Remote Credit Pending:</strong> Financial credit is recorded in your ledger. Keep the meter connected; its delivery status will update when the meter confirms the credit.
+                ℹ️ <strong>Remote Credit Pending:</strong> Financial credit is recorded in your ledger. If the meter is offline, it will auto-sync when reconnected, or check SMS for your 16-digit recovery token.
               </div>
             )}
 

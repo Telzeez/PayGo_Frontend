@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import { UserProfile } from '../types';
 import { authApi, LoginParams, RegisterParams } from '../api/auth';
 
@@ -13,7 +12,6 @@ interface AuthContextType {
   loginWithGoogle: (token: string, role?: string) => Promise<{needsRegistration?: boolean, registrationToken?: string} | void>;
   registerGoogle: (params: { registrationToken: string; phone?: string; role: string }) => Promise<void>;
   register: (params: RegisterParams) => Promise<void>;
-  becomeSeller: () => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
 }
@@ -21,7 +19,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,14 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const becomeSeller = async () => {
-    const res = await authApi.becomeSeller();
-    if (res.success && res.token && res.user) {
-      localStorage.setItem('paygo_token', res.token);
-      setUser(res.user);
-    }
-  };
-
   const updateProfile = async (data: { email?: string; phone?: string; newPassword?: string }) => {
     const res = await authApi.updateProfile(data);
     if (res.success && res.user) {
@@ -104,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('paygo_token');
     setUser(null);
     authApi.logout().catch(console.error);
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const value = {
@@ -114,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     loginWithGoogle,
     register,
-    becomeSeller,
     registerGoogle,
     updateProfile,
     logout,

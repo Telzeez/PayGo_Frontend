@@ -299,8 +299,8 @@ function MarketplaceContent() {
     : '/login?redirect=/';
 
   const signupRedirectUrl = selectedListing
-    ? `/login?mode=signup&redirect=${encodeURIComponent(`/?listingId=${selectedListing.listingId}`)}`
-    : '/login?mode=signup&redirect=/';
+    ? `/register?redirect=${encodeURIComponent(`/?listingId=${selectedListing.listingId}`)}`
+    : '/register';
 
   const scrollToFeed = () => {
     const el = document.getElementById('nearby-feed');
@@ -344,7 +344,7 @@ function MarketplaceContent() {
                 Sign In
               </Link>
               <Link
-                href="/login?mode=signup"
+                href="/register"
                 className="px-4 py-2 rounded-xl bg-amber-500 text-zinc-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-sm"
               >
                 Get Started

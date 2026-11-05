@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
+import { devicesApi } from '@/lib/api/devices';
+import { AccountDevice } from '@/lib/types';
 
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -33,6 +35,28 @@ export default function BuyerMarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
+  const [buyerMeters, setBuyerMeters] = useState<AccountDevice[]>([]);
+  const [selectedBuyerMeterId, setSelectedBuyerMeterId] = useState('');
+  const [loadingBuyerMeters, setLoadingBuyerMeters] = useState(false);
+  const [buyerMeterError, setBuyerMeterError] = useState('');
+
+  const resetBuyerMeterSelection = () => {
+    setBuyerMeters([]);
+    setSelectedBuyerMeterId('');
+    setBuyerMeterError('');
+    setLoadingBuyerMeters(false);
+  };
+
+  const openPurchaseConfirmation = (listing: NearbyListing) => {
+    resetBuyerMeterSelection();
+    setLoadingBuyerMeters(Boolean(user));
+    setSelectedListing(listing);
+  };
+
+  const closePurchaseConfirmation = () => {
+    setSelectedListing(null);
+    resetBuyerMeterSelection();
+  };
 
   const [isDemoLocation, setIsDemoLocation] = useState(false);
 
@@ -46,6 +70,45 @@ export default function BuyerMarketplacePage() {
     };
   }, [selectedListing]);
 
+  useEffect(() => {
+    if (!selectedListing || !user) return;
+
+    let active = true;
+    devicesApi.getMyDevices()
+      .then((response) => {
+        if (!active) return;
+        if (!response.success) {
+          throw new Error('Unable to load your registered meters.');
+        }
+        setBuyerMeters(response.devices);
+        const selectedMeter = response.devices.find(
+          (meter) => meter.deviceId === response.selectedDeviceId
+        );
+        setSelectedBuyerMeterId(selectedMeter?.deviceId ?? response.devices[0]?.deviceId ?? '');
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setBuyerMeterError(
+            loadError instanceof Error ? loadError.message : 'Unable to load your registered meters.'
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingBuyerMeters(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedListing?.listingId, user]);
+
+  function setDemoLocation() {
+    setLatitude(7.44);
+    setLongitude(3.9);
+    setLocationGranted(true);
+    setIsDemoLocation(true);
+  }
+
   // Request HTML5 Browser Location
   const requestLocation = () => {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
@@ -58,23 +121,16 @@ export default function BuyerMarketplacePage() {
           setLocationStatus('granted');
           setIsDemoLocation(false);
         },
-        (_err) => {
-          useDemoLocation();
+        () => {
+          setDemoLocation();
           setLocationStatus('denied');
         },
         { timeout: 8000 }
       );
     } else {
-      useDemoLocation();
+      setDemoLocation();
       setLocationStatus('unavailable');
     }
-  };
-
-  const useDemoLocation = () => {
-    setLatitude(7.44);
-    setLongitude(3.9);
-    setLocationGranted(true);
-    setIsDemoLocation(true);
   };
 
   // Fetch Nearby Listings when coordinates or radius changes
@@ -88,9 +144,9 @@ export default function BuyerMarketplacePage() {
       if (res.success) {
         setListings(res.listings);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching nearby listings:', err);
-      setError(err.message || 'Failed to search nearby energy listings.');
+      setError(err instanceof Error ? err.message : 'Failed to search nearby energy listings.');
     } finally {
       setLoading(false);
     }
@@ -105,6 +161,10 @@ export default function BuyerMarketplacePage() {
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
     if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
+    if (!selectedBuyerMeterId || !buyerMeters.some((meter) => meter.deviceId === selectedBuyerMeterId)) {
+      setError('Select a meter linked to your account before continuing.');
+      return;
+    }
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -121,6 +181,7 @@ export default function BuyerMarketplacePage() {
         kwhRequested: numKwh,
         buyerLatitude: latitude,
         buyerLongitude: longitude,
+        buyerDeviceId: selectedBuyerMeterId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -206,7 +267,7 @@ export default function BuyerMarketplacePage() {
               Allow GPS Location
             </button>
             <button
-              onClick={useDemoLocation}
+              onClick={setDemoLocation}
               className="w-full sm:w-auto bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold py-3.5 px-6 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-xs"
             >
               Use Test Location (7.44, 3.90)
@@ -250,7 +311,7 @@ export default function BuyerMarketplacePage() {
                       <MapPinIcon className="w-3 h-3" /> Use GPS
                     </button>
                     <button
-                      onClick={useDemoLocation}
+                      onClick={setDemoLocation}
                       className="px-3 py-1.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[11px] font-bold transition-all"
                     >
                       Demo Location
@@ -355,7 +416,7 @@ export default function BuyerMarketplacePage() {
                       <button
                         onClick={() => {
                           setError('');
-                          setSelectedListing(item);
+                          openPurchaseConfirmation(item);
                         }}
                         className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
                       >
@@ -384,7 +445,7 @@ export default function BuyerMarketplacePage() {
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
               <h3 id="marketplace-purchase-title" className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
               <button
-                onClick={() => setSelectedListing(null)}
+                onClick={closePurchaseConfirmation}
                 className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -404,14 +465,50 @@ export default function BuyerMarketplacePage() {
                 <span className="text-zinc-500">Distance</span>
                 <span className="font-bold text-amber-600">{selectedListing.distanceMeters} meters</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Device ID</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Your selected meter</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-zinc-500">Seller&apos;s energy source</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Separate from your meter</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tariff Rate</span>
                 <span className="font-bold text-zinc-900 dark:text-white">₦{selectedListing.pricePerKwh}/kWh</span>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="buyer-destination-meter" className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Credit energy to your meter
+              </label>
+              <select
+                id="buyer-destination-meter"
+                value={selectedBuyerMeterId}
+                onChange={(event) => setSelectedBuyerMeterId(event.target.value)}
+                disabled={loadingBuyerMeters || buyerMeters.length === 0 || purchasing}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 font-mono text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+              >
+                <option value="">
+                  {loadingBuyerMeters ? 'Loading your linked meters…' : 'Select your meter'}
+                </option>
+                {buyerMeters.map((meter) => (
+                  <option key={meter.deviceId} value={meter.deviceId}>
+                    {meter.deviceId}{meter.isSelected ? ' (account default)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                This is your destination meter. It is not the prosumer&apos;s energy-source meter.
+              </p>
+              {!loadingBuyerMeters && buyerMeters.length === 0 && (
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  <p className="font-semibold">No meter is linked to your account yet.</p>
+                  <p className="mt-1">
+                    Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link an existing registered meter to your account. Give them the meter ID printed on the hardware and the email you use here. Do not use the seller&apos;s meter or the shared demo meter.
+                  </p>
+                </div>
+              )}
+              {buyerMeterError && (
+                <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{buyerMeterError}</p>
+              )}
             </div>
 
             {/* kWh Input */}
@@ -457,7 +554,7 @@ export default function BuyerMarketplacePage() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setSelectedListing(null)}
+                onClick={closePurchaseConfirmation}
                 className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
               >
                 Cancel
@@ -465,7 +562,7 @@ export default function BuyerMarketplacePage() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0}
+                disabled={purchasing || loadingBuyerMeters || buyerMeters.length === 0 || !selectedBuyerMeterId || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

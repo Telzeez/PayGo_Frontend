@@ -126,12 +126,18 @@ export default function SellerSetupPage() {
             ))}
           </select>
           <p className="text-xs text-zinc-500 mt-2">
-            Select the hardware meter that supplies this listing. Device IDs are printed on the meter (for example, DEVICE-001); the meter must already be linked to your account.
+            Choose the registered meter connected to the energy source you are listing. This is your source meter, not a buyer&apos;s destination meter.
           </p>
           {!loadingDevices && accountDevices.length === 0 && (
-            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400" role="status">
-              No meters are linked to your account yet. Ask an owner/admin to link your registered meter first. The shared demo meter DEVICE-001 is not assigned automatically.
-            </p>
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
+              <p className="font-semibold">You need a registered meter linked to your account before you can list energy.</p>
+              <ol className="mt-2 list-inside list-decimal space-y-1">
+                <li>Find the meter ID printed on your physical meter.</li>
+                <li>Contact a PayGo platform administrator with that ID and your account email.</li>
+                <li>After it is linked, return here and select it.</li>
+              </ol>
+              <p className="mt-2">Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link your existing registered meter. Do not use another person&apos;s meter or the shared demo meter.</p>
+            </div>
           )}
         </div>
 

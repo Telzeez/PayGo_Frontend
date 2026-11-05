@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
-import PayoutAccountForm from '@/components/admin/PayoutAccountForm';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
@@ -37,11 +36,11 @@ export default function AdminDashboardPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              OWNER / ADMIN DASHBOARD
+              LEGACY OWNER TOOLS
             </span>
           </div>
           <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
-            Platform Hardware & Meter Control
+            Meter Assignment Tools
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -60,7 +59,9 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <PayoutAccountForm />
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        This is the legacy owner meter-management page, not the dedicated platform-admin portal. A separate PLATFORM_ADMIN sign-in, MFA, and staff dashboard are not available yet.
+      </section>
 
       <section className="min-w-0 rounded-3xl border border-zinc-200/60 bg-white p-5 shadow-sm dark:border-zinc-800/60 dark:bg-[#121214] sm:p-6">
         <h2 className="text-base font-bold text-zinc-900 dark:text-white">Link a registered meter to a customer</h2>

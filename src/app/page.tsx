@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
+import { devicesApi } from '@/lib/api/devices';
+import { AccountDevice } from '@/lib/types';
 
 // Standard Lucide SVG Icon Components
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -99,10 +101,32 @@ function MarketplaceContent() {
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [buyerMeters, setBuyerMeters] = useState<AccountDevice[]>([]);
+  const [selectedBuyerMeterId, setSelectedBuyerMeterId] = useState('');
+  const [loadingBuyerMeters, setLoadingBuyerMeters] = useState(false);
+  const [buyerMeterError, setBuyerMeterError] = useState('');
+
+  const resetBuyerMeterSelection = () => {
+    setBuyerMeters([]);
+    setSelectedBuyerMeterId('');
+    setBuyerMeterError('');
+    setLoadingBuyerMeters(false);
+  };
+
+  const openPurchaseConfirmation = (listing: NearbyListing) => {
+    resetBuyerMeterSelection();
+    setLoadingBuyerMeters(isAuthenticated);
+    setSelectedListing(listing);
+  };
+
+  const closePurchaseConfirmation = () => {
+    setSelectedListing(null);
+    resetBuyerMeterSelection();
+  };
 
   // Auto-load demo location on mount instead of prompting for GPS
   useEffect(() => {
-    useDemoLocation();
+    setDemoLocation();
   }, []);
 
   useEffect(() => {
@@ -115,6 +139,38 @@ function MarketplaceContent() {
     };
   }, [selectedListing]);
 
+  useEffect(() => {
+    if (!selectedListing || !isAuthenticated) return;
+
+    let active = true;
+    devicesApi.getMyDevices()
+      .then((response) => {
+        if (!active) return;
+        if (!response.success) {
+          throw new Error('Unable to load your registered meters.');
+        }
+        setBuyerMeters(response.devices);
+        const selectedMeter = response.devices.find(
+          (meter) => meter.deviceId === response.selectedDeviceId
+        );
+        setSelectedBuyerMeterId(selectedMeter?.deviceId ?? response.devices[0]?.deviceId ?? '');
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setBuyerMeterError(
+            loadError instanceof Error ? loadError.message : 'Unable to load your registered meters.'
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingBuyerMeters(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedListing?.listingId, isAuthenticated]);
+
   const requestLocation = () => {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -124,22 +180,22 @@ function MarketplaceContent() {
           setLocationGranted(true);
           setIsDemoLocation(false);
         },
-        (_err) => {
-          useDemoLocation();
+        () => {
+          setDemoLocation();
         },
         { timeout: 8000 }
       );
     } else {
-      useDemoLocation();
+      setDemoLocation();
     }
   };
 
-  const useDemoLocation = () => {
+  function setDemoLocation() {
     setLatitude(7.44);
     setLongitude(3.9);
     setLocationGranted(true);
     setIsDemoLocation(true);
-  };
+  }
 
   // Fetch Nearby Energy Listings when location or radius changes
   const fetchNearby = async () => {
@@ -156,13 +212,13 @@ function MarketplaceContent() {
         if (targetListingId) {
           const matched = res.listings.find((item) => item.listingId === parseInt(targetListingId, 10));
           if (matched) {
-            setSelectedListing(matched);
+            openPurchaseConfirmation(matched);
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching nearby listings:', err);
-      setError(err.message || 'Failed to search nearby energy listings.');
+      setError(err instanceof Error ? err.message : 'Failed to search nearby energy listings.');
     } finally {
       setLoading(false);
     }
@@ -177,7 +233,7 @@ function MarketplaceContent() {
   // Handle Buy Click
   const handleBuyClick = (item: NearbyListing) => {
     setError('');
-    setSelectedListing(item);
+    openPurchaseConfirmation(item);
     if (!isAuthenticated) {
       setShowAuthModal(true);
     }
@@ -186,6 +242,10 @@ function MarketplaceContent() {
   // Handle Purchase Confirmation for authenticated users
   const handleConfirmPurchase = async () => {
     if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
+    if (!selectedBuyerMeterId || !buyerMeters.some((meter) => meter.deviceId === selectedBuyerMeterId)) {
+      setError('Select a meter linked to your account before continuing.');
+      return;
+    }
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -201,6 +261,7 @@ function MarketplaceContent() {
         kwhRequested: numKwh,
         buyerLatitude: latitude,
         buyerLongitude: longitude,
+        buyerDeviceId: selectedBuyerMeterId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -437,7 +498,7 @@ function MarketplaceContent() {
                 <span className="whitespace-nowrap">Use GPS</span>
               </button>
               <button
-                onClick={useDemoLocation}
+                onClick={setDemoLocation}
                 className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 font-semibold text-xs transition-all border border-zinc-200 dark:border-zinc-800 whitespace-nowrap"
               >
                 Demo Location
@@ -646,7 +707,7 @@ function MarketplaceContent() {
               <button
                 onClick={() => {
                   setShowAuthModal(false);
-                  setSelectedListing(null);
+                  closePurchaseConfirmation();
                 }}
                 className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 mt-1"
               >
@@ -670,7 +731,7 @@ function MarketplaceContent() {
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
               <h3 id="marketplace-purchase-title" className="text-base font-bold text-zinc-900 dark:text-white">Confirm Marketplace Purchase</h3>
               <button
-                onClick={() => setSelectedListing(null)}
+                onClick={closePurchaseConfirmation}
                 className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
               >
                 <XIcon className="w-4 h-4" />
@@ -687,14 +748,50 @@ function MarketplaceContent() {
                 <span className="text-zinc-500">Distance</span>
                 <span className="font-bold text-amber-600 dark:text-amber-400">{selectedListing.distanceMeters} meters</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Device ID</span>
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Your selected meter</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-zinc-500">Seller&apos;s energy source</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Separate from your meter</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tariff Rate</span>
                 <span className="font-bold text-zinc-900 dark:text-white">₦{selectedListing.pricePerKwh}/kWh</span>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="buyer-meter" className="mb-1.5 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Credit energy to your meter
+              </label>
+              <select
+                id="buyer-meter"
+                value={selectedBuyerMeterId}
+                onChange={(event) => setSelectedBuyerMeterId(event.target.value)}
+                disabled={loadingBuyerMeters || buyerMeters.length === 0 || purchasing}
+                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 font-mono text-sm text-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
+              >
+                <option value="">
+                  {loadingBuyerMeters ? 'Loading your linked meters…' : 'Select your meter'}
+                </option>
+                {buyerMeters.map((meter) => (
+                  <option key={meter.deviceId} value={meter.deviceId}>
+                    {meter.deviceId}{meter.isSelected ? ' (account default)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                This is your destination meter. It is not the prosumer&apos;s energy-source meter.
+              </p>
+              {!loadingBuyerMeters && buyerMeters.length === 0 && (
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  <p className="font-semibold">No meter is linked to your account yet.</p>
+                  <p className="mt-1">
+                    Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link an existing registered meter to your account. Give them the meter ID printed on the hardware and the email you use here. Do not use the seller&apos;s meter or the shared demo meter.
+                  </p>
+                </div>
+              )}
+              {buyerMeterError && (
+                <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">{buyerMeterError}</p>
+              )}
             </div>
 
             {/* kWh Input */}
@@ -743,7 +840,7 @@ function MarketplaceContent() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setSelectedListing(null)}
+                onClick={closePurchaseConfirmation}
                 className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
               >
                 Cancel
@@ -751,7 +848,7 @@ function MarketplaceContent() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0}
+                disabled={purchasing || loadingBuyerMeters || buyerMeters.length === 0 || !selectedBuyerMeterId || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

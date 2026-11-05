@@ -179,6 +179,7 @@ export const marketplaceApi = {
       kwhRequested: number;
       buyerLatitude: number;
       buyerLongitude: number;
+      buyerDeviceId: string;
     }
   ) => {
     return apiClient<{

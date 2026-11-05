@@ -119,8 +119,7 @@ export default function Dashboard() {
       <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-3xl border border-zinc-200/60 bg-white p-8 text-center dark:border-zinc-800/60 dark:bg-[#121214]">
         <h1 className="text-xl font-bold text-zinc-900 dark:text-white">No meter linked to your account</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Your meter balance and transactions will appear here after an administrator links a registered meter to your account.
-          Marketplace prosumer listings are separate and do not give access to a seller&apos;s meter.
+          Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link an existing registered meter to your account. Give them the meter ID printed on the hardware and the email you use here. Do not use a seller&apos;s meter; marketplace purchases need to be credited to a meter linked to your account.
         </p>
         <Link href="/marketplace" className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950">
           Browse nearby prosumers

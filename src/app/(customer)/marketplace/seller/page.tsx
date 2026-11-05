@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
 import { devicesApi } from '@/lib/api/devices';
 import { AccountDevice } from '@/lib/types';
+import PayoutAccountForm from '@/components/admin/PayoutAccountForm';
 
 export default function SellerMarketplacePage() {
   const [sources, setSources] = useState<SellerSource[]>([]);
@@ -178,6 +179,8 @@ export default function SellerMarketplacePage() {
         </div>
       )}
 
+      <PayoutAccountForm />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Step 1: Register Energy Source */}
         <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
@@ -219,12 +222,18 @@ export default function SellerMarketplacePage() {
                 ))}
               </select>
               <p className="text-[11px] text-zinc-400 mt-1.5">
-                Use the hardware meter that supplies this energy. Its ID is printed on the meter (for example, DEVICE-001) and must already be linked to your account.
+                Choose the registered meter connected to the energy source you are listing. This is your source meter, not a buyer&apos;s destination meter.
               </p>
               {!loadingDevices && accountDevices.length === 0 && (
-                <p className="mt-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400" role="status">
-                  No meters are linked to your account. Ask an owner/admin to link your registered meter first. The shared demo meter DEVICE-001 is not assigned automatically.
-                </p>
+                <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
+                  <p className="font-semibold">First, get your registered meter linked to your account:</p>
+                  <ol className="mt-1 list-inside list-decimal space-y-0.5">
+                    <li>Find the ID printed on your physical meter.</li>
+                    <li>Give that ID and your account email to a PayGo platform administrator.</li>
+                    <li>Return here once the meter is linked.</li>
+                  </ol>
+                  <p className="mt-1">Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link your existing registered meter. Do not use another person&apos;s meter or the shared demo meter.</p>
+                </div>
               )}
             </div>
 

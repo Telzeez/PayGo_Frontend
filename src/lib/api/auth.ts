@@ -47,6 +47,13 @@ export const authApi = {
     });
   },
 
+  becomeSeller: async () => {
+    return apiClient<AuthResponse>('/api/auth/become-seller', {
+      method: 'POST',
+      requireAuth: true,
+    });
+  },
+
   getMe: async () => {
     return apiClient<{ success: boolean; user: AuthResponse['user'] }>('/api/auth/me', {
       method: 'GET',

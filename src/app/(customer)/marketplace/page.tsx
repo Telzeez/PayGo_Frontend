@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
@@ -47,11 +47,11 @@ export default function BuyerMarketplacePage() {
     setLoadingBuyerMeters(false);
   };
 
-  const openPurchaseConfirmation = (listing: NearbyListing) => {
+  const openPurchaseConfirmation = useCallback((listing: NearbyListing) => {
     resetBuyerMeterSelection();
     setLoadingBuyerMeters(Boolean(user));
     setSelectedListing(listing);
-  };
+  }, [user]);
 
   const closePurchaseConfirmation = () => {
     setSelectedListing(null);
@@ -100,17 +100,20 @@ export default function BuyerMarketplacePage() {
     return () => {
       active = false;
     };
-  }, [selectedListing?.listingId, user]);
+  }, [selectedListing, user]);
 
   function setDemoLocation() {
     setLatitude(7.44);
     setLongitude(3.9);
     setLocationGranted(true);
     setIsDemoLocation(true);
+    setLocationStatus('granted');
+    setError('');
   }
 
   // Request HTML5 Browser Location
   const requestLocation = () => {
+    setError('');
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       setLocationStatus('prompt');
       navigator.geolocation.getCurrentPosition(
@@ -121,20 +124,28 @@ export default function BuyerMarketplacePage() {
           setLocationStatus('granted');
           setIsDemoLocation(false);
         },
-        () => {
-          setDemoLocation();
-          setLocationStatus('denied');
+        (positionError) => {
+          setLocationGranted(false);
+          setLatitude(null);
+          setLongitude(null);
+          setListings([]);
+          closePurchaseConfirmation();
+          setLocationStatus(positionError.code === positionError.PERMISSION_DENIED ? 'denied' : 'unavailable');
+          setError(positionError.code === positionError.PERMISSION_DENIED
+            ? 'Location access was denied. Allow GPS or choose the test location explicitly to see eligible offers.'
+            : 'Your location is unavailable. Try GPS again or choose the test location explicitly.');
         },
         { timeout: 8000 }
       );
     } else {
-      setDemoLocation();
+      setLocationGranted(false);
       setLocationStatus('unavailable');
+      setError('Location is unavailable in this browser. Choose the test location explicitly to see eligible offers.');
     }
   };
 
   // Fetch Nearby Listings when coordinates or radius changes
-  const fetchNearby = async () => {
+  const fetchNearby = useCallback(async () => {
     if (latitude === null || longitude === null) return;
     setLoading(true);
     setError('');
@@ -150,13 +161,13 @@ export default function BuyerMarketplacePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [latitude, longitude, radiusMeters]);
 
   useEffect(() => {
     if (locationGranted && latitude !== null && longitude !== null) {
-      fetchNearby();
+      void Promise.resolve().then(fetchNearby);
     }
-  }, [locationGranted, latitude, longitude, radiusMeters]);
+  }, [locationGranted, latitude, longitude, radiusMeters, fetchNearby]);
 
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
@@ -257,6 +268,16 @@ export default function BuyerMarketplacePage() {
             <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mt-1.5 leading-relaxed">
               SolarPayMe uses geographical proximity matching to screen nearby solar energy sellers and minimize physical distribution distance.
             </p>
+            {locationStatus === 'denied' && (
+              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                GPS permission was denied. You can allow it in browser settings or choose the test location yourself.
+              </p>
+            )}
+            {locationStatus === 'unavailable' && (
+              <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                GPS is unavailable here. Choose the test location only if you want to test the marketplace.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

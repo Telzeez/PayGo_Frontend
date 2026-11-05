@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -113,21 +113,16 @@ function MarketplaceContent() {
     setLoadingBuyerMeters(false);
   };
 
-  const openPurchaseConfirmation = (listing: NearbyListing) => {
+  const openPurchaseConfirmation = useCallback((listing: NearbyListing) => {
     resetBuyerMeterSelection();
     setLoadingBuyerMeters(isAuthenticated);
     setSelectedListing(listing);
-  };
+  }, [isAuthenticated]);
 
   const closePurchaseConfirmation = () => {
     setSelectedListing(null);
     resetBuyerMeterSelection();
   };
-
-  // Auto-load demo location on mount instead of prompting for GPS
-  useEffect(() => {
-    setDemoLocation();
-  }, []);
 
   useEffect(() => {
     if (!selectedListing) return;
@@ -169,9 +164,10 @@ function MarketplaceContent() {
     return () => {
       active = false;
     };
-  }, [selectedListing?.listingId, isAuthenticated]);
+  }, [selectedListing, isAuthenticated]);
 
   const requestLocation = () => {
+    setError('');
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -180,13 +176,21 @@ function MarketplaceContent() {
           setLocationGranted(true);
           setIsDemoLocation(false);
         },
-        () => {
-          setDemoLocation();
+        (positionError) => {
+          setLocationGranted(false);
+          setLatitude(null);
+          setLongitude(null);
+          setListings([]);
+          closePurchaseConfirmation();
+          setError(positionError.code === positionError.PERMISSION_DENIED
+            ? 'Location access was denied. Allow GPS or choose the demo location explicitly to see nearby offers.'
+            : 'Your location is unavailable. Try GPS again or choose the demo location explicitly.');
         },
         { timeout: 8000 }
       );
     } else {
-      setDemoLocation();
+      setLocationGranted(false);
+      setError('Location is unavailable in this browser. Choose the demo location explicitly to see nearby offers.');
     }
   };
 
@@ -195,10 +199,11 @@ function MarketplaceContent() {
     setLongitude(3.9);
     setLocationGranted(true);
     setIsDemoLocation(true);
+    setError('');
   }
 
   // Fetch Nearby Energy Listings when location or radius changes
-  const fetchNearby = async () => {
+  const fetchNearby = useCallback(async () => {
     if (latitude === null || longitude === null) return;
     setLoading(true);
     setError('');
@@ -222,13 +227,13 @@ function MarketplaceContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [latitude, longitude, radiusMeters, targetListingId, openPurchaseConfirmation]);
 
   useEffect(() => {
     if (locationGranted && latitude !== null && longitude !== null) {
-      fetchNearby();
+      void Promise.resolve().then(fetchNearby);
     }
-  }, [locationGranted, latitude, longitude, radiusMeters, targetListingId]);
+  }, [locationGranted, latitude, longitude, radiusMeters, targetListingId, fetchNearby]);
 
   // Handle Buy Click
   const handleBuyClick = (item: NearbyListing) => {
@@ -420,7 +425,7 @@ function MarketplaceContent() {
                 <span className="text-xs text-zinc-500">Proximity Score</span>
               </div>
               <blockquote className="text-sm font-semibold italic text-zinc-800 dark:text-zinc-200 leading-snug">
-                "Clean, local solar energy — trade directly with nearby microgrid sellers."
+                &ldquo;Clean, local solar energy — trade directly with nearby microgrid sellers.&rdquo;
               </blockquote>
             </div>
 
@@ -477,8 +482,14 @@ function MarketplaceContent() {
         <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5 overflow-hidden">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-              <span className={`w-2.5 h-2.5 rounded-full ${isDemoLocation ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse shrink-0`}></span>
-              <span>Coordinates: <strong className="text-zinc-900 dark:text-white font-mono">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                !locationGranted ? 'bg-zinc-400' : isDemoLocation ? 'bg-amber-500' : 'bg-emerald-500'
+              } ${locationGranted ? 'animate-pulse' : ''} shrink-0`}></span>
+              <span>
+                {locationGranted
+                  ? <>Coordinates: <strong className="text-zinc-900 dark:text-white font-mono">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong></>
+                  : 'Choose GPS or the demo location to see eligible nearby sellers.'}
+              </span>
               {isDemoLocation && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                   DEV DEMO LOCATION
@@ -558,9 +569,15 @@ function MarketplaceContent() {
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20">
                 <MapPinIcon className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-zinc-900 dark:text-white">No active energy sellers found within {radiusMeters >= 1000 ? `${radiusMeters / 1000}km` : `${radiusMeters}m`}</p>
+              <p className="text-sm font-bold text-zinc-900 dark:text-white">
+                {locationGranted
+                  ? `No active energy sellers found within ${radiusMeters >= 1000 ? `${radiusMeters / 1000}km` : `${radiusMeters}m`}`
+                  : 'Choose a location to find eligible energy sellers'}
+              </p>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-                Try expanding your search radius or click "Demo Location" to view test sellers.
+                {locationGranted
+                  ? 'Try expanding your search radius or choose the demo location to test the marketplace.'
+                  : 'Use GPS for your current location, or choose the demo location explicitly for testing.'}
               </p>
             </div>
           ) : (

@@ -26,6 +26,7 @@ export interface SellerSource {
   longitude: number;
   serviceRadiusMeters: number;
   status: string;
+  isDemo?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,7 +42,8 @@ export interface SellerListing {
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
-  sourceName: string
+  isDemo?: boolean;
+  sourceName?: string
 }
 
 export interface MarketplacePurchaseResult {

@@ -45,6 +45,7 @@ function AuthPageContent() {
     setIsSubmitting(true);
 
     try {
+      let destination = redirect;
       if (registrationToken) {
         await registerGoogle({ registrationToken, phone: phone || undefined, role });
       } else if (isLogin) {
@@ -53,14 +54,18 @@ function AuthPageContent() {
         await register({ email, password, phone: phone || undefined, role });
       }
 
+      if (registrationToken || !isLogin) {
+        destination = role === 'SELLER' ? '/marketplace/seller' : '/onboarding';
+      }
+
       setIsSubmitting(false);
       setIsSuccess(true);
 
       setTimeout(() => {
-        router.push(redirect);
+        router.push(destination);
       }, 1200);
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check your details.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Authentication failed. Please check your details.');
       setIsSubmitting(false);
     }
   };
@@ -330,8 +335,8 @@ function AuthPageContent() {
                         }, 1200);
                       }
                     }
-                  } catch (err: any) {
-                    setError(err.message || 'Google Authentication failed.');
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : 'Google Authentication failed.');
                     setIsSubmitting(false);
                   }
                 }}

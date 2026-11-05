@@ -16,7 +16,7 @@ export default function SellerMarketplacePage() {
 
   // New Source Form
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
-  const [deviceId, setDeviceId] = useState('DEVICE-001');
+  const [deviceId, setDeviceId] = useState('');
   const [sourceLat, setSourceLat] = useState('7.4400');
   const [sourceLon, setSourceLon] = useState('3.9000');
   const [serviceRadius, setServiceRadius] = useState('500');
@@ -196,7 +196,7 @@ export default function SellerMarketplacePage() {
                 onChange={(e) => setDeviceId(e.target.value)}
                 required
                 className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white"
-                placeholder="DEVICE-001"
+                placeholder="Meter linked to your account"
               />
             </div>
 

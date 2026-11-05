@@ -13,20 +13,45 @@ export default function PurchaseDetailPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
+    let isFetching = false;
+    let pollInterval: ReturnType<typeof setInterval> | undefined;
+
     const fetchPurchase = async () => {
-      if (!id) return;
+      if (!id || isFetching) return;
+      isFetching = true;
+
       try {
         const res = await marketplaceApi.getPurchaseDetail(Number(id));
-        if (res.success) {
+        if (res.success && isMounted) {
           setPurchase(res.purchase);
+          setError('');
+          const terminal =
+            res.purchase.status === 'CANCELLED' ||
+            res.purchase.status === 'EXPIRED' ||
+            (res.purchase.status === 'COMPLETED' &&
+              ['CONFIRMED', 'FAILED'].includes(res.purchase.hardwareStatus));
+          if (terminal && pollInterval) clearInterval(pollInterval);
+        } else if (isMounted) {
+          setError('Failed to load purchase details.');
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load purchase details.');
+      } catch (err: unknown) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load purchase details.');
+        }
       } finally {
-        setLoading(false);
+        isFetching = false;
+        if (isMounted) setLoading(false);
       }
     };
-    fetchPurchase();
+
+    void fetchPurchase();
+    pollInterval = setInterval(() => void fetchPurchase(), 5000);
+
+    return () => {
+      isMounted = false;
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [id]);
 
   const getStateStep = () => {
@@ -119,6 +144,12 @@ export default function PurchaseDetailPage() {
         <p className="text-xs text-zinc-500 mt-1 font-mono">Ref: {purchase.purchaseReference}</p>
       </div>
 
+      {error && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-4 rounded-2xl text-xs font-medium text-amber-800 dark:text-amber-400">
+          Latest status unavailable. Showing the last loaded purchase details. {error}
+        </div>
+      )}
+
       <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-100 dark:border-zinc-800/50 pb-6 mb-6">
           <div>
@@ -143,10 +174,6 @@ export default function PurchaseDetailPage() {
           <div>
             <div className="text-zinc-500 mb-1">Distance</div>
             <div className="font-medium text-zinc-900 dark:text-white">{purchase.distanceMeters} meters away</div>
-          </div>
-          <div>
-            <div className="text-zinc-500 mb-1">Target Meter</div>
-            <div className="font-medium font-mono text-zinc-900 dark:text-white">{purchase.deviceId}</div>
           </div>
           <div>
             <div className="text-zinc-500 mb-1">Date</div>
@@ -179,7 +206,7 @@ export default function PurchaseDetailPage() {
           />
           <StepIndicator 
             stepNum={4} 
-            title="Credit Pending (MQTT)" 
+            title="Credit Pending (Remote)"
             description="Transmitting energy credit to your physical meter." 
             icon={Zap} 
           />

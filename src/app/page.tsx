@@ -200,6 +200,7 @@ function MarketplaceContent() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.data?.authorization_url) {
@@ -312,7 +313,7 @@ function MarketplaceContent() {
                 <span className="w-1 h-6 bg-zinc-400 dark:bg-zinc-600 inline-block"></span>
               </div>
               <span className="font-mono text-[10px] text-zinc-400 tracking-widest uppercase">
-                TELEMETRY // MQTT ACTIVE (ESP32)
+                LIVE METER TELEMETRY
               </span>
             </div>
           </div>
@@ -517,7 +518,7 @@ function MarketplaceContent() {
                     </div>
 
                     <h3 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
-                      {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
+                      {item.sourceName}
                     </h3>
 
                     <p className="text-xs text-zinc-500">
@@ -552,7 +553,7 @@ function MarketplaceContent() {
           <div className="text-center space-y-2">
             <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">PAYGO SUBSYSTEM</span>
             <h2 className="text-xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white">How PayGo Local Energy Operates</h2>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">Seamless integration across location matching, automated NGN payment, and MQTT hardware synchronization.</p>
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto leading-relaxed">Seamless integration across location matching, automated NGN payment, and remote meter synchronization.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center text-xs">
@@ -582,7 +583,7 @@ function MarketplaceContent() {
               </div>
               <h3 className="font-bold text-zinc-900 dark:text-white text-sm">3. Hardware Delivery</h3>
               <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Energy credits are published over MQTT to physical solar meters with 16-digit offline SMS fallback tokens.
+                Energy credits are sent to physical solar meters through the remote credit service, with delivery status tracked on your dashboard.
               </p>
             </div>
           </div>
@@ -674,7 +675,7 @@ function MarketplaceContent() {
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Device ID</span>
-                <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedListing.deviceId}</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Your selected meter</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tariff Rate</span>

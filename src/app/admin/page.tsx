@@ -9,6 +9,10 @@ export default function AdminDashboardPage() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [assignmentDeviceId, setAssignmentDeviceId] = useState('');
+  const [assignmentEmail, setAssignmentEmail] = useState('');
+  const [assignmentMessage, setAssignmentMessage] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const DEVICE_ID = 'DEVICE-001';
 
@@ -37,6 +41,25 @@ export default function AdminDashboardPage() {
   const pendingCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'PENDING').length || 0;
   const failedCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'FAILED').length || 0;
   const isOnline = deviceData?.status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
+
+  const handleAssignMeter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAssignmentMessage('');
+    setIsAssigning(true);
+    try {
+      const result = await devicesApi.linkDeviceToAccount(assignmentDeviceId.trim(), assignmentEmail.trim());
+      if (!result.success) {
+        throw new Error('Failed to link meter to the account.');
+      }
+      setAssignmentMessage('Meter linked to the account successfully.');
+      setAssignmentDeviceId('');
+      setAssignmentEmail('');
+    } catch (err) {
+      setAssignmentMessage(err instanceof Error ? err.message : 'Failed to link meter.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -81,6 +104,41 @@ export default function AdminDashboardPage() {
           <p className="text-[11px] text-zinc-400">Active Compound Solar Systems</p>
         </div>
 
+        <section className="rounded-3xl border border-zinc-200/60 bg-white p-6 shadow-sm dark:border-zinc-800/60 dark:bg-[#121214]">
+          <h2 className="text-base font-bold text-zinc-900 dark:text-white">Link a registered meter to a customer</h2>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Only existing meters can be linked. Each meter can belong to one account; new assignments do not move existing balances.
+          </p>
+          <form onSubmit={handleAssignMeter} className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <input
+              required
+              minLength={3}
+              value={assignmentDeviceId}
+              onChange={(event) => setAssignmentDeviceId(event.target.value)}
+              placeholder="Registered meter ID"
+              aria-label="Registered meter ID"
+              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+            />
+            <input
+              required
+              type="email"
+              value={assignmentEmail}
+              onChange={(event) => setAssignmentEmail(event.target.value)}
+              placeholder="Customer account email"
+              aria-label="Customer account email"
+              className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+            />
+            <button
+              type="submit"
+              disabled={isAssigning}
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+            >
+              {isAssigning ? 'Linking…' : 'Link meter'}
+            </button>
+          </form>
+          {assignmentMessage && <p role="status" className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">{assignmentMessage}</p>}
+        </section>
+
         {/* Metric 2 */}
         <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm space-y-1">
           <p className="text-xs text-zinc-500 font-medium">Meter Connection</p>
@@ -106,7 +164,7 @@ export default function AdminDashboardPage() {
           <p className={`text-2xl font-bold ${failedCount > 0 ? 'text-red-500' : 'text-zinc-900 dark:text-white'}`}>
             {failedCount}
           </p>
-          <p className="text-[11px] text-zinc-400">Requires Recovery Token</p>
+          <p className="text-[11px] text-zinc-400">Requires meter connectivity review</p>
         </div>
       </div>
 

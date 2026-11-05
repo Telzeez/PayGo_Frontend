@@ -1,27 +1,40 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { devicesApi } from '@/lib/api/devices';
 import { paymentApi } from '@/lib/api/payment';
 import Link from 'next/link';
 
 export default function RechargePage() {
   const { user } = useAuth();
   
-  // Default values for prototype
-  const DEVICE_ID = 'DEVICE-001';
   const PRICE_PER_KWH = 200; // As per backend environment
 
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('5000');
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState('');
+  const [loadingDevice, setLoadingDevice] = useState(true);
+
+  useEffect(() => {
+    devicesApi.getMyDevices()
+      .then((accountDevices) => {
+        if (!accountDevices.success) {
+          throw new Error('Unable to load your linked meter.');
+        }
+        setDeviceId(accountDevices.selectedDeviceId);
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Unable to load your linked meter.'))
+      .finally(() => setLoadingDevice(false));
+  }, []);
 
   const numAmount = parseInt(amount, 10);
   const isValidAmount = !isNaN(numAmount) && numAmount >= 100;
   const kwhEstimate = isValidAmount ? (numAmount / PRICE_PER_KWH).toFixed(2) : '0.00';
 
   const handlePayment = async () => {
-    if (!isValidAmount || !user?.email) return;
+    if (!isValidAmount || !user?.email || !deviceId) return;
 
     setError('');
     setIsInitializing(true);
@@ -30,7 +43,7 @@ export default function RechargePage() {
       const response = await paymentApi.initiate({
         amount: numAmount,
         email: user.email,
-        deviceId: DEVICE_ID
+        deviceId
       });
 
       if (response.success && response.paymentUrl) {
@@ -86,7 +99,9 @@ export default function RechargePage() {
                   <line x1="1" y1="14" x2="4" y2="14"></line>
                 </svg>
               </div>
-              <span className="font-semibold text-zinc-900 dark:text-white tracking-wide">{DEVICE_ID}</span>
+              <span className="font-semibold text-zinc-900 dark:text-white tracking-wide">
+                {loadingDevice ? 'Loading…' : deviceId || 'No meter linked'}
+              </span>
             </div>
             <span className="text-zinc-400">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -123,9 +138,14 @@ export default function RechargePage() {
           </span>
         </div>
 
+        {!loadingDevice && !deviceId && (
+          <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+            An administrator must link a registered meter to your account before you can recharge.
+          </p>
+        )}
         <button 
           onClick={handlePayment}
-          disabled={!isValidAmount || isInitializing}
+          disabled={!isValidAmount || isInitializing || loadingDevice || !deviceId}
           className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
         >
           {isInitializing ? (

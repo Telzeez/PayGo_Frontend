@@ -276,7 +276,7 @@ export function EnergyDurationPredictor({ purchasedKwh, compact = false }: Energ
               </span>
             </div>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {tierSource === 'live_meter' && 'Reading measured electrical power draw directly from buyer’s physical meter via ESP32 MQTT telemetry.'}
+              {tierSource === 'live_meter' && 'Reading measured electrical power draw from the buyer’s meter through the backend service.'}
               {tierSource === 'meter_history' && 'Calculated from historical consumption data over buyer’s logged transaction timeline.'}
               {tierSource === 'appliances' && 'Fallback load estimator for new customers without prior hardware usage history.'}
             </p>

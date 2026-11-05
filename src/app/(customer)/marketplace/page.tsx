@@ -122,6 +122,7 @@ export default function BuyerMarketplacePage() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.data?.authorization_url) {
@@ -325,7 +326,7 @@ export default function BuyerMarketplacePage() {
                       </div>
 
                       <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-                        {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
+                        {item.sourceName}
                       </h3>
 
                       <p className="text-xs text-zinc-500">
@@ -389,7 +390,7 @@ export default function BuyerMarketplacePage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Device ID</span>
-                <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{selectedListing.deviceId}</span>
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">Your selected meter</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Tariff Rate</span>

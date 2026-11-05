@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
-import { DeviceResponse, Transaction } from '@/lib/types';
+import { AccountDevice, DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 
@@ -11,9 +11,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-
-  // Default device ID for prototype
-  const DEVICE_ID = 'DEVICE-001';
+  const [linkedDevices, setLinkedDevices] = useState<AccountDevice[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -21,16 +20,28 @@ export default function Dashboard() {
     const fetchDevice = async (isPolling = false) => {
       if (isPolling) setIsRefreshing(true);
       try {
-        const response = await devicesApi.getDevice(DEVICE_ID);
+        const accountDevices = await devicesApi.getMyDevices();
+        if (!mounted) return;
+        if (!accountDevices.success) {
+          throw new Error('Failed to load your linked meters.');
+        }
+        setLinkedDevices(accountDevices.devices || []);
+        setSelectedDeviceId(accountDevices.selectedDeviceId);
+        if (!accountDevices.selectedDeviceId) {
+          setDeviceData(null);
+          setError('');
+          return;
+        }
+        const response = await devicesApi.getDevice(accountDevices.selectedDeviceId);
         if (mounted && response.success) {
           setDeviceData(response);
           setError('');
         } else if (mounted && !response.success && !isPolling) {
           setError('Failed to load device data.');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (mounted && !isPolling) {
-          setError(err.message || 'Error communicating with server.');
+          setError(err instanceof Error ? err.message : 'Error communicating with server.');
         }
       } finally {
         if (mounted) {
@@ -48,6 +59,24 @@ export default function Dashboard() {
       clearInterval(interval);
     };
   }, []);
+
+  const handleDeviceSelection = async (deviceId: string) => {
+    try {
+      const selection = await devicesApi.selectMyDevice(deviceId);
+      if (!selection.success) {
+        throw new Error('Unable to select this meter.');
+      }
+      setSelectedDeviceId(deviceId);
+      const response = await devicesApi.getDevice(deviceId);
+      if (!response.success) {
+        throw new Error('Unable to load the selected meter.');
+      }
+      setDeviceData(response);
+      setError('');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to select this meter.');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount);
@@ -85,7 +114,22 @@ export default function Dashboard() {
     );
   }
 
-  const { balance, status, deviceId, transactions } = deviceData || {};
+  if (!selectedDeviceId || !deviceData) {
+    return (
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-3xl border border-zinc-200/60 bg-white p-8 text-center dark:border-zinc-800/60 dark:bg-[#121214]">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-white">No meter linked to your account</h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Your meter balance and transactions will appear here after an administrator links a registered meter to your account.
+          Marketplace prosumer listings are separate and do not give access to a seller&apos;s meter.
+        </p>
+        <Link href="/marketplace" className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950">
+          Browse nearby prosumers
+        </Link>
+      </div>
+    );
+  }
+
+  const { balance, status, deviceId, transactions } = deviceData;
   // Fast offline check: if device hasn't sent a heartbeat within 13 seconds, reflect offline immediately
   const isMeterOnline = status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
 
@@ -106,7 +150,20 @@ export default function Dashboard() {
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || DEVICE_ID}</h2>
+              {linkedDevices.length > 1 ? (
+                <select
+                  aria-label="Select your meter"
+                  value={selectedDeviceId}
+                  onChange={(event) => void handleDeviceSelection(event.target.value)}
+                  className="max-w-48 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-base font-medium text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  {linkedDevices.map((meter) => (
+                    <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>
+                  ))}
+                </select>
+              ) : (
+                <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId}</h2>
+              )}
               {isRefreshing && (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-zinc-400 animate-spin">
                   <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
@@ -157,20 +214,13 @@ export default function Dashboard() {
         </div>
 
         {/* Intuitive Quick Navigation Grid */}
-        <div className="grid grid-cols-3 gap-2.5 mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-center text-xs font-semibold">
+        <div className="grid grid-cols-2 gap-2.5 mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-center text-xs font-semibold">
           <Link href="/transactions" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500">
               <path d="M3 3v18h18" />
               <path d="m19 9-5 5-4-4-3 3" />
             </svg>
             <span>History</span>
-          </Link>
-
-          <Link href="/tokens" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500">
-              <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-            </svg>
-            <span>Tokens</span>
           </Link>
 
           <Link href="/profile" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
@@ -236,8 +286,16 @@ export default function Dashboard() {
                   )}
 
                   <div>
-                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">{formatCurrency(tx.amount)}</p>
-                    <p className="text-[13px] text-zinc-500 dark:text-zinc-400 mt-0.5">{Number(tx.kwhAmount).toFixed(2)} kWh • {formatDate(tx.timestamp)}</p>
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">
+                      {tx.type === 'consumption'
+                        ? 'Energy Consumed'
+                        : Number(tx.amount) > 0
+                          ? formatCurrency(tx.amount)
+                          : 'Energy Credit'}
+                    </p>
+                    <p className="text-[13px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      {tx.type === 'consumption' ? '-' : '+'}{Number(tx.kwhAmount).toFixed(2)} kWh • {formatDate(tx.timestamp)}
+                    </p>
                   </div>
                 </div>
                 

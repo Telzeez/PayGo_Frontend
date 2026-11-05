@@ -502,7 +502,7 @@ export default function BuyerMarketplacePage() {
                 <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                   <p className="font-semibold">No meter is linked to your account yet.</p>
                   <p className="mt-1">
-                    Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link an existing registered meter to your account. Give them the meter ID printed on the hardware and the email you use here. Do not use the seller&apos;s meter or the shared demo meter.
+                    Meter linking is paused for this prototype, so you cannot complete a marketplace purchase without a meter already linked to your account. The shared demo meter and the seller&apos;s meter are not buyer destination meters.
                   </p>
                 </div>
               )}

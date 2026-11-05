@@ -226,13 +226,8 @@ export default function SellerMarketplacePage() {
               </p>
               {!loadingDevices && accountDevices.length === 0 && (
                 <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
-                  <p className="font-semibold">First, get your registered meter linked to your account:</p>
-                  <ol className="mt-1 list-inside list-decimal space-y-0.5">
-                    <li>Find the ID printed on your physical meter.</li>
-                    <li>Give that ID and your account email to a PayGo platform administrator.</li>
-                    <li>Return here once the meter is linked.</li>
-                  </ol>
-                  <p className="mt-1">Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link your existing registered meter. Do not use another person&apos;s meter or the shared demo meter.</p>
+                  <p className="font-semibold">Meter linking is paused for this prototype.</p>
+                  <p className="mt-1">You cannot register or assign a meter from this page yet, so listings that require a linked source meter are unavailable for accounts without one. The shared demo meter is not assigned automatically.</p>
                 </div>
               )}
             </div>

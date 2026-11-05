@@ -130,13 +130,8 @@ export default function SellerSetupPage() {
           </p>
           {!loadingDevices && accountDevices.length === 0 && (
             <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" role="status">
-              <p className="font-semibold">You need a registered meter linked to your account before you can list energy.</p>
-              <ol className="mt-2 list-inside list-decimal space-y-1">
-                <li>Find the meter ID printed on your physical meter.</li>
-                <li>Contact a PayGo platform administrator with that ID and your account email.</li>
-                <li>After it is linked, return here and select it.</li>
-              </ol>
-              <p className="mt-2">Meter linking is not self-service and there is no in-app request form yet. The person managing PayGo must link your existing registered meter. Do not use another person&apos;s meter or the shared demo meter.</p>
+              <p className="font-semibold">Meter linking is paused for this prototype.</p>
+              <p className="mt-2">You cannot register or assign a meter from this page yet, so energy listings that require a linked source meter are unavailable for accounts without one. The shared demo meter is not assigned automatically.</p>
             </div>
           )}
         </div>

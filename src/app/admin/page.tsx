@@ -1,33 +1,37 @@
 "use client";
 
-import React, { useState } from 'react';
-import { devicesApi } from '@/lib/api/devices';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function AdminDashboardPage() {
-  const [assignmentDeviceId, setAssignmentDeviceId] = useState('');
-  const [assignmentEmail, setAssignmentEmail] = useState('');
-  const [assignmentMessage, setAssignmentMessage] = useState('');
-  const [isAssigning, setIsAssigning] = useState(false);
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+  const isOwner = user?.role?.toUpperCase() === 'OWNER';
 
-  const handleAssignMeter = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setAssignmentMessage('');
-    setIsAssigning(true);
-    try {
-      const result = await devicesApi.linkDeviceToAccount(assignmentDeviceId.trim(), assignmentEmail.trim());
-      if (!result.success) {
-        throw new Error('Failed to link meter to the account.');
-      }
-      setAssignmentMessage('Meter linked to the account successfully.');
-      setAssignmentDeviceId('');
-      setAssignmentEmail('');
-    } catch (err) {
-      setAssignmentMessage(err instanceof Error ? err.message : 'Failed to link meter.');
-    } finally {
-      setIsAssigning(false);
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!isAuthenticated) {
+      router.replace('/login?redirect=%2Fadmin');
+      return;
     }
-  };
+    if (!isOwner) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthLoading, isAuthenticated, isOwner, router]);
+
+  if (isAuthLoading || (isAuthenticated && isOwner === false)) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center text-sm text-zinc-500">
+        {isAuthLoading ? 'Checking administrator access…' : 'Redirecting…'}
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !isOwner) {
+    return null;
+  }
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 animate-in fade-in duration-500">
@@ -64,38 +68,13 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="min-w-0 rounded-3xl border border-zinc-200/60 bg-white p-5 shadow-sm dark:border-zinc-800/60 dark:bg-[#121214] sm:p-6">
-        <h2 className="text-base font-bold text-zinc-900 dark:text-white">Link a registered meter to a customer</h2>
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white">Meter assignment is paused</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Only existing meters can be linked. Each meter can belong to one account; new assignments do not move existing balances.
+          Meter-to-account assignment is disabled for this prototype. You do not need to enter a hardware ID or customer email here.
         </p>
-        <form onSubmit={handleAssignMeter} className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-            <input
-              required
-              minLength={3}
-              value={assignmentDeviceId}
-              onChange={(event) => setAssignmentDeviceId(event.target.value)}
-              placeholder="Registered meter ID"
-              aria-label="Registered meter ID"
-              className="w-full min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-            />
-            <input
-              required
-              type="email"
-              value={assignmentEmail}
-              onChange={(event) => setAssignmentEmail(event.target.value)}
-              placeholder="Customer account email"
-              aria-label="Customer account email"
-              className="w-full min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-            />
-          <button
-            type="submit"
-            disabled={isAssigning}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 sm:col-span-2 lg:col-span-1"
-          >
-            {isAssigning ? 'Linking…' : 'Link meter'}
-          </button>
-        </form>
-        {assignmentMessage && <p role="status" className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">{assignmentMessage}</p>}
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          The shared demo meter remains available as prototype hardware and is not automatically assigned to any account.
+        </p>
       </section>
 
       <section className="min-w-0 rounded-3xl border border-zinc-200/60 bg-white p-5 shadow-sm dark:border-zinc-800/60 dark:bg-[#121214] sm:p-6">

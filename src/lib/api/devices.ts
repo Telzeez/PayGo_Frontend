@@ -35,17 +35,6 @@ export const devicesApi = {
     );
   },
 
-  linkDeviceToAccount: async (deviceId: string, email: string) => {
-    return apiClient<{ success: boolean; deviceId: string; email: string }>(
-      `/api/admin/devices/${encodeURIComponent(deviceId)}/assign`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-        requireAuth: true,
-      }
-    );
-  },
-
   getDevice: async (deviceId: string) => {
     return apiClient<DeviceResponse>(`/api/devices/${encodeURIComponent(deviceId)}`, {
       method: 'GET',

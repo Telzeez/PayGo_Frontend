@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
+import { devicesApi } from '@/lib/api/devices';
+import { AccountDevice } from '@/lib/types';
 
 export default function SellerMarketplacePage() {
-  const { user } = useAuth();
-
   const [sources, setSources] = useState<SellerSource[]>([]);
   const [listings, setListings] = useState<SellerListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [accountDevices, setAccountDevices] = useState<AccountDevice[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(true);
 
   // New Source Form
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
@@ -28,36 +29,46 @@ export default function SellerMarketplacePage() {
   const [pricePerKwh, setPricePerKwh] = useState('250');
   const [creatingListing, setCreatingListing] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError('');
+  const fetchData = useCallback(async () => {
     try {
-      const [sourcesRes, listingsRes] = await Promise.all([
+      const [sourcesRes, listingsRes, devicesRes] = await Promise.all([
         marketplaceApi.getSellerSources(),
         marketplaceApi.getSellerListings(),
+        devicesApi.getMyDevices(),
       ]);
 
       if (sourcesRes.success) {
         setSources(sourcesRes.sources);
-        if (sourcesRes.sources.length > 0 && !selectedSourceId) {
-          setSelectedSourceId(sourcesRes.sources[0].id.toString());
-        }
+        setSelectedSourceId((selectedId) => (
+          sourcesRes.sources.some((source) => source.id.toString() === selectedId)
+            ? selectedId
+            : sourcesRes.sources[0]?.id.toString() ?? ''
+        ));
       }
 
       if (listingsRes.success) {
         setListings(listingsRes.listings);
       }
-    } catch (err: any) {
+      if (devicesRes.success) {
+        setAccountDevices(devicesRes.devices);
+        setDeviceId((currentDeviceId) => (
+          devicesRes.devices.some((device) => device.deviceId === currentDeviceId)
+            ? currentDeviceId
+            : devicesRes.selectedDeviceId ?? devicesRes.devices[0]?.deviceId ?? ''
+        ));
+      }
+    } catch (err: unknown) {
       console.error('Error fetching seller marketplace data:', err);
-      setError(err.message || 'Failed to load seller information.');
+      setError(err instanceof Error ? err.message : 'Failed to load seller information.');
     } finally {
       setLoading(false);
+      setLoadingDevices(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    void Promise.resolve().then(fetchData);
+  }, [fetchData]);
 
   const handleCreateSource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +89,8 @@ export default function SellerMarketplacePage() {
         setSuccess(`Energy Source "${res.source.name}" registered successfully!`);
         fetchData();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to register energy source.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to register energy source.');
     } finally {
       setCreatingSource(false);
     }
@@ -107,8 +118,8 @@ export default function SellerMarketplacePage() {
         setSuccess('Energy listing published to nearby buyers!');
         fetchData();
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to publish listing.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to publish listing.');
     } finally {
       setCreatingListing(false);
     }
@@ -119,8 +130,8 @@ export default function SellerMarketplacePage() {
     try {
       await marketplaceApi.toggleListingStatus(listingId, action);
       fetchData();
-    } catch (err: any) {
-      setError(err.message || `Failed to ${action} listing.`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : `Failed to ${action} listing.`);
     }
   };
 
@@ -189,15 +200,32 @@ export default function SellerMarketplacePage() {
             </div>
 
             <div>
-              <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">PAYGO Meter Device ID</label>
-              <input
-                type="text"
+              <label htmlFor="seller-meter" className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Your PAYGO Meter</label>
+              <select
+                id="seller-meter"
                 value={deviceId}
                 onChange={(e) => setDeviceId(e.target.value)}
                 required
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white"
-                placeholder="Meter linked to your account"
-              />
+                disabled={loadingDevices || accountDevices.length === 0}
+                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white disabled:opacity-60"
+              >
+                <option value="">
+                  {loadingDevices ? 'Loading your linked meters…' : 'Select a meter linked to your account'}
+                </option>
+                {accountDevices.map((device) => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.deviceId}{device.isSelected ? ' (selected)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-zinc-400 mt-1.5">
+                Use the hardware meter that supplies this energy. Its ID is printed on the meter (for example, DEVICE-001) and must already be linked to your account.
+              </p>
+              {!loadingDevices && accountDevices.length === 0 && (
+                <p className="mt-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400" role="status">
+                  No meters are linked to your account. Ask an owner/admin to link your registered meter first. The shared demo meter DEVICE-001 is not assigned automatically.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -240,7 +268,7 @@ export default function SellerMarketplacePage() {
 
             <button
               type="submit"
-              disabled={creatingSource}
+              disabled={creatingSource || loadingDevices || accountDevices.length === 0}
               className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
             >
               {creatingSource ? 'Registering Source...' : 'Register Energy Source'}

@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { marketplaceApi } from '@/lib/api/marketplace';
+import { devicesApi } from '@/lib/api/devices';
+import { AccountDevice } from '@/lib/types';
 
 export default function SellerSetupPage() {
   const router = useRouter();
   
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
   const [deviceId, setDeviceId] = useState('');
+  const [accountDevices, setAccountDevices] = useState<AccountDevice[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(true);
   const [sourceLat, setSourceLat] = useState('7.4400');
   const [sourceLon, setSourceLon] = useState('3.9000');
   const [serviceRadius, setServiceRadius] = useState('500');
@@ -16,6 +20,28 @@ export default function SellerSetupPage() {
   const [creatingSource, setCreatingSource] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    devicesApi.getMyDevices()
+      .then((response) => {
+        if (!active) return;
+        setAccountDevices(response.devices);
+        setDeviceId(response.selectedDeviceId ?? response.devices[0]?.deviceId ?? '');
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : 'Unable to load your linked meters.');
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingDevices(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleCreateSource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +65,8 @@ export default function SellerSetupPage() {
           router.push('/marketplace/seller/listings');
         }, 1500);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to register energy source.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to register energy source.');
     } finally {
       setCreatingSource(false);
     }
@@ -81,16 +107,32 @@ export default function SellerSetupPage() {
         </div>
 
         <div>
-          <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1.5">PAYGO Meter Device ID</label>
-          <input
-            type="text"
+          <label htmlFor="seller-meter" className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1.5">Your PAYGO Meter</label>
+          <select
+            id="seller-meter"
             value={deviceId}
             onChange={(e) => setDeviceId(e.target.value)}
             required
+            disabled={loadingDevices || accountDevices.length === 0}
             className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-mono text-zinc-900 dark:text-white focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all outline-none"
-            placeholder="Meter linked to your account"
-          />
-          <p className="text-xs text-zinc-500 mt-2">The unique ID of the physical meter you are using to supply energy.</p>
+          >
+            <option value="">
+              {loadingDevices ? 'Loading your linked meters…' : 'Select a meter linked to your account'}
+            </option>
+            {accountDevices.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.deviceId}{device.isSelected ? ' (selected)' : ''}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-zinc-500 mt-2">
+            Select the hardware meter that supplies this listing. Device IDs are printed on the meter (for example, DEVICE-001); the meter must already be linked to your account.
+          </p>
+          {!loadingDevices && accountDevices.length === 0 && (
+            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400" role="status">
+              No meters are linked to your account yet. Ask an owner/admin to link your registered meter first. The shared demo meter DEVICE-001 is not assigned automatically.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -133,7 +175,7 @@ export default function SellerSetupPage() {
 
         <button
           type="submit"
-          disabled={creatingSource}
+          disabled={creatingSource || loadingDevices || accountDevices.length === 0}
           className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all disabled:opacity-50 mt-4"
         >
           {creatingSource ? 'Registering Source...' : 'Register Energy Source'}

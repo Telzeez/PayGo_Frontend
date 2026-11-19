@@ -16,6 +16,11 @@ export const devicesApi = {
       { method: 'GET', requireAuth: true }
     ),
 
+  resetBalance: async (deviceId: string) => apiClient<{ success: boolean; deviceId: string; balance: number; previousBalance: number; message: string }>(
+    `/api/owner/devices/${encodeURIComponent(deviceId)}/reset-balance`,
+    { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
+  ),
+
   getConsumption: async (deviceId: string, period: 'day' | 'week' | 'month') =>
     apiClient<{ success: boolean; deviceId: string; period: string; readings: Array<{ date: string; kwhConsumed: number }> }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/consumption?period=${period}`,

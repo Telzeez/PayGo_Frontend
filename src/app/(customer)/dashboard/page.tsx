@@ -12,7 +12,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const { devices, selectedDeviceId, selectedDevice, selectDevice, loadingDevices, deviceError } = useDevices();
+  const { devices, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
 
   useEffect(() => {
     let mounted = true;

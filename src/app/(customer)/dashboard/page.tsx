@@ -83,7 +83,13 @@ export default function Dashboard() {
           </svg>
         </div>
         <p className="text-zinc-900 dark:text-white font-medium">{error}</p>
-        <button onClick={() => window.location.reload()} className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Try again</button>
+        {error.toLowerCase().includes('no meters are assigned') ? (
+          <Link href="/meters" className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950 hover:bg-amber-400">
+            Connect a meter
+          </Link>
+        ) : (
+          <button onClick={() => window.location.reload()} className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Try again</button>
+        )}
       </div>
     );
   }

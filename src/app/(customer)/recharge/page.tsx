@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { paymentApi } from '@/lib/api/payment';
 import Link from 'next/link';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function RechargePage() {
   const { user } = useAuth();
   
-  // Default values for prototype
-  const DEVICE_ID = 'DEVICE-001';
+  const { selectedDeviceId, loadingDevices } = useDevices();
   const PRICE_PER_KWH = 200; // As per backend environment
 
   const [amount, setAmount] = useState<string>('5000');
@@ -21,7 +21,7 @@ export default function RechargePage() {
   const kwhEstimate = isValidAmount ? (numAmount / PRICE_PER_KWH).toFixed(2) : '0.00';
 
   const handlePayment = async () => {
-    if (!isValidAmount || !user?.email) return;
+    if (!isValidAmount || !user?.email || !selectedDeviceId) return;
 
     setError('');
     setIsInitializing(true);
@@ -30,7 +30,7 @@ export default function RechargePage() {
       const response = await paymentApi.initiate({
         amount: numAmount,
         email: user.email,
-        deviceId: DEVICE_ID
+        deviceId: selectedDeviceId
       });
 
       if (response.success && response.paymentUrl) {
@@ -60,6 +60,7 @@ export default function RechargePage() {
 
       <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
         
+        {!loadingDevices && !selectedDeviceId && <p className="mb-4 text-sm text-red-600">No meter is assigned to your account. Contact the platform administrator.</p>}
         {error && (
           <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-medium border border-red-100 dark:border-red-500/20 mb-6">
             {error}
@@ -86,7 +87,7 @@ export default function RechargePage() {
                   <line x1="1" y1="14" x2="4" y2="14"></line>
                 </svg>
               </div>
-              <span className="font-semibold text-zinc-900 dark:text-white tracking-wide">{DEVICE_ID}</span>
+              <span className="font-semibold text-zinc-900 dark:text-white tracking-wide">{selectedDeviceId || 'No meter selected'}</span>
             </div>
             <span className="text-zinc-400">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -125,7 +126,7 @@ export default function RechargePage() {
 
         <button 
           onClick={handlePayment}
-          disabled={!isValidAmount || isInitializing}
+          disabled={!isValidAmount || isInitializing || loadingDevices || !selectedDeviceId}
           className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
         >
           {isInitializing ? (

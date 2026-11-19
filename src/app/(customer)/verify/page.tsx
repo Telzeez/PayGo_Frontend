@@ -15,7 +15,6 @@ export default function VerifyPage() {
   const [status, setStatus] = useState<'INITIALIZING' | 'VERIFYING_PAYMENT' | 'WAITING_HARDWARE' | 'CONFIRMED' | 'FAILED'>('INITIALIZING');
   const [kwhAmount, setKwhAmount] = useState<number | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
-  const [hardwareStatus, setHardwareStatus] = useState<'PENDING' | 'CONFIRMED' | 'FAILED'>('PENDING');
 
   useEffect(() => {
     if (!reference) {
@@ -63,7 +62,8 @@ export default function VerifyPage() {
 
     const checkHardware = async () => {
       try {
-        const deviceRes = await selectedDeviceId ? devicesApi.getDevice(selectedDeviceId) : Promise.reject(new Error('No meter selected'));
+        if (!selectedDeviceId) return;
+        const deviceRes = await devicesApi.getDevice(selectedDeviceId);
         if (deviceRes.success) {
           if (isMounted && deviceRes.status) {
             setDeviceStatus(deviceRes.status as 'ONLINE' | 'OFFLINE');
@@ -71,7 +71,6 @@ export default function VerifyPage() {
           if (deviceRes.transactions) {
             const tx = deviceRes.transactions.find(t => t.reference === reference);
             if (tx) {
-              setHardwareStatus(tx.hardwareStatus);
               if (tx.hardwareStatus === 'CONFIRMED') {
                 if (isMounted) setStatus('CONFIRMED');
                 clearInterval(hardwarePollInterval);
@@ -191,7 +190,7 @@ export default function VerifyPage() {
         {status === 'CONFIRMED' && (
           <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-5 text-center mb-6">
             <h3 className="text-emerald-800 dark:text-emerald-400 font-bold mb-1">Recharge Confirmed</h3>
-            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">{Number(kwhAmount).toFixed(2)} kWh has been credited to {DEVICE_ID}.</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">{Number(kwhAmount).toFixed(2)} kWh has been credited to {selectedDeviceId || 'Selected meter'}.</p>
           </div>
         )}
 
@@ -206,7 +205,7 @@ export default function VerifyPage() {
               <span>Payment Successful (Meter Offline)</span>
             </div>
             <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
-              Your financial balance has been credited. The backend will automatically send energy to your meter as soon as it reconnects online.
+              Your balance has been updated on the server. The meter will retrieve it through HTTPS when it reconnects online.
             </p>
             <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">No keypad code is required. The meter will receive its balance automatically when it reconnects.</p>
           </div>

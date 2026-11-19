@@ -811,7 +811,19 @@ function MarketplaceContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center text-white text-xs font-bold">Loading PAYGO Marketplace...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 text-white">
+        <div className="relative w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <svg viewBox="0 0 48 48" className="w-9 h-9 text-amber-400" fill="none" aria-hidden="true">
+            <rect x="8" y="15" width="29" height="19" rx="4" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M38 21v7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            <path d="m25 17-8 10h7l-1 7 9-12h-7l1-5Z" fill="currentColor" className="animate-pulse" />
+          </svg>
+          <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+        </div>
+        <p className="text-xs font-semibold text-zinc-400">Getting PAYGO ready…</p>
+      </div>
+    }>
       <MarketplaceContent />
     </Suspense>
   );

@@ -64,7 +64,7 @@ function AuthPageContent() {
       setIsSubmitting(false);
       setIsSuccess(true);
 
-      const destination = role === 'OWNER' ? '/admin' : redirect;
+      const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
       router.replace(destination);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
@@ -310,7 +310,7 @@ function AuthPageContent() {
                         setError(''); // Clear error state since it's a success
                       } else {
                         setIsSuccess(true);
-                        const destination = role === 'OWNER' ? '/admin' : redirect;
+                        const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
                         router.replace(destination);
                       }
                     }

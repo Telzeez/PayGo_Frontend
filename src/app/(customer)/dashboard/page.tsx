@@ -199,7 +199,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {transactions?.map((tx: Transaction) => {
+          {[...(transactions || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5).map((tx: Transaction) => {
             const isConfirmed = tx.hardwareStatus === 'CONFIRMED';
             const isPending = tx.hardwareStatus === 'PENDING';
             const isFailed = tx.hardwareStatus === 'FAILED';

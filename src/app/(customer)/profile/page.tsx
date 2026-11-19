@@ -9,7 +9,7 @@ import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
-  const { selectedDeviceId, loadingDevices } = useDevices();
+  const { selectedDeviceId, loadingDevices, refreshDevices } = useDevices();
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +21,9 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
+  const [resetModal, setResetModal] = useState<'confirm' | 'offline' | 'success' | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -39,6 +42,44 @@ export default function ProfilePage() {
 
     if (!loadingDevices) fetchProfileData();
   }, [selectedDeviceId, loadingDevices]);
+
+
+  const openResetModal = async () => {
+    if (!selectedDeviceId) return;
+    setResetError('');
+    try {
+      const latest = await devicesApi.getDevice(selectedDeviceId);
+      const lastSeenMs = latest.lastSeenAt ? new Date(latest.lastSeenAt).getTime() : 0;
+      const isFresh = lastSeenMs > 0 && Date.now() - lastSeenMs <= 12000;
+      if (latest.status !== 'ONLINE' || !isFresh) {
+        setResetModal('offline');
+        return;
+      }
+      setResetModal('confirm');
+    } catch (error: any) {
+      setResetError(error.message || 'Unable to check meter status. Please try again.');
+    }
+  };
+
+  const confirmBalanceReset = async () => {
+    if (!selectedDeviceId) return;
+    setResetLoading(true);
+    setResetError('');
+    try {
+      await devicesApi.resetBalance(selectedDeviceId);
+      setDevice((current) => current ? { ...current, balance: 0 } : current);
+      await refreshDevices();
+      setResetModal('success');
+    } catch (error: any) {
+      if (error?.data?.code === 'DEVICE_OFFLINE' || error?.status === 409) {
+        setResetModal('offline');
+      } else {
+        setResetError(error.message || 'Unable to reset meter balance.');
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const openEditModal = () => {
     setEditEmail(user?.email || '');
@@ -156,7 +197,7 @@ export default function ProfilePage() {
           <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs text-zinc-500">Device ID</p>
-              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{DEVICE_ID}</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{selectedDeviceId || 'No meter selected'}</p>
             </div>
             <div className="sm:text-right shrink-0">
               <p className="text-xs text-zinc-500">Current Balance</p>
@@ -180,6 +221,25 @@ export default function ProfilePage() {
           >
             View History
           </Link>
+        </div>
+      </section>
+
+
+      {/* Owner Device Settings */}
+      <section className="bg-white dark:bg-[#121214] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-zinc-900 dark:text-white">Device Settings</h2>
+          <p className="text-xs text-zinc-500 mt-1">Manage actions for {selectedDeviceId || 'your selected meter'}.</p>
+        </div>
+        <div className="rounded-2xl bg-red-50/70 dark:bg-red-500/5 border border-red-100 dark:border-red-900/30 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Reset device balance</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Set this meter's available energy balance to 0.000 kWh. Your payments, top-ups and usage history will remain unchanged.</p>
+          </div>
+          <button type="button" onClick={openResetModal} disabled={!selectedDeviceId || loadingDevices || resetLoading} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50 transition-colors">
+            Reset Meter Balance
+          </button>
+          {resetError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{resetError}</p>}
         </div>
       </section>
 

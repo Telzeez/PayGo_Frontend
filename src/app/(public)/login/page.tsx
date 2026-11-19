@@ -205,7 +205,7 @@ function AuthPageContent() {
 
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    Account Type
+                    How will you use PAYGO?
                   </label>
                   <div className="flex gap-3">
                     <button
@@ -228,7 +228,7 @@ function AuthPageContent() {
                           : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
                       }`}
                     >
-                      Admin (Owner)
+                      Energy Seller (Prosumer)
                     </button>
                   </div>
                 </div>

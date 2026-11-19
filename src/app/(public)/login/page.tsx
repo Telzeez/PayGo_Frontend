@@ -10,8 +10,16 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-12 min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-950 dark:border-white"></div>
+      <div className="flex flex-col items-center justify-center py-12 min-h-[400px] gap-4">
+        <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+          <svg viewBox="0 0 48 48" className="w-9 h-9 text-amber-500" fill="none" aria-hidden="true">
+            <rect x="8" y="15" width="29" height="19" rx="4" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M38 21v7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            <path d="m25 17-8 10h7l-1 7 9-12h-7l1-5Z" fill="currentColor" className="animate-pulse" />
+          </svg>
+          <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+        </div>
+        <p className="text-xs font-semibold text-zinc-500">Getting PAYGO ready…</p>
       </div>
     }>
       <AuthPageContent />
@@ -56,10 +64,8 @@ function AuthPageContent() {
       setIsSubmitting(false);
       setIsSuccess(true);
 
-      setTimeout(() => {
-        const destination = role === 'OWNER' ? '/admin' : redirect;
-        router.push(destination);
-      }, 1200);
+      const destination = role === 'OWNER' ? '/admin' : redirect;
+      router.replace(destination);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
       setIsSubmitting(false);
@@ -73,41 +79,19 @@ function AuthPageContent() {
     >
       {isSubmitting ? (
         <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-in fade-in zoom-in duration-300">
-          <div className="relative w-24 h-24 flex items-center justify-center">
-            <svg
-              className="absolute inset-0 w-full h-full text-zinc-300 dark:text-zinc-700 animate-spin"
-              viewBox="0 0 100 100"
-              fill="none"
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke="currentColor"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray="70 140"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke="currentColor"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray="70 140"
-                strokeDashoffset="140"
-                className="opacity-50 text-zinc-900 dark:text-white"
-              />
-              <circle cx="50" cy="95" r="5" fill="currentColor" className="text-zinc-900 dark:text-white" />
-            </svg>
-
-            <svg
-              className="w-10 h-10 text-zinc-900 dark:text-white animate-pulse"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          <div className="relative w-28 h-24 flex items-center justify-center">
+            <div className="absolute bottom-2 w-24 h-2 rounded-full bg-amber-500/10 blur-md animate-pulse" />
+            <svg viewBox="0 0 112 88" className="relative w-28 h-22" fill="none" aria-hidden="true">
+              <path d="M10 68h92" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-zinc-200 dark:text-zinc-700" />
+              <rect x="28" y="20" width="56" height="46" rx="9" stroke="currentColor" strokeWidth="3" className="text-zinc-800 dark:text-zinc-200" />
+              <path d="M84 34h5v18h-5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-800 dark:text-zinc-200" />
+              <path d="m58 25-14 20h12l-3 15 17-23H58l0-12Z" fill="currentColor" className="text-amber-500 animate-pulse" />
+              <path d="M13 15h9M17.5 10.5v9M94 14h7M97.5 10.5v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-amber-500">
+                <animate attributeName="opacity" values="0.25;1;0.25" dur="1.4s" repeatCount="indefinite" />
+              </path>
+              <circle cx="17" cy="54" r="3" fill="currentColor" className="text-emerald-500">
+                <animate attributeName="cy" values="58;48;58" dur="1.6s" repeatCount="indefinite" />
+              </circle>
             </svg>
           </div>
           <p className="text-zinc-900 dark:text-white font-semibold animate-pulse">
@@ -326,10 +310,8 @@ function AuthPageContent() {
                         setError(''); // Clear error state since it's a success
                       } else {
                         setIsSuccess(true);
-                        setTimeout(() => {
-                          const destination = role === 'OWNER' ? '/admin' : redirect;
-                          router.push(destination);
-                        }, 1200);
+                        const destination = role === 'OWNER' ? '/admin' : redirect;
+                        router.replace(destination);
                       }
                     }
                   } catch (err: any) {

@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
+import { devicesApi } from '@/lib/api/devices';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 
 // Standard Lucide SVG Icon Components
@@ -98,6 +99,8 @@ function MarketplaceContent() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
+  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
+  const [buyerDeviceId, setBuyerDeviceId] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-load demo location on mount instead of prompting for GPS
@@ -172,9 +175,29 @@ function MarketplaceContent() {
     }
   };
 
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setOwnedMeters([]);
+      setBuyerDeviceId('');
+      return () => { active = false; };
+    }
+    devicesApi.getDevices().then((response) => {
+      if (!active) return;
+      const meters = response.devices || [];
+      setOwnedMeters(meters);
+      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
+        ? current
+        : meters[0]?.deviceId || '');
+    }).catch((error) => {
+      if (active) console.error('Unable to load buyer meters:', error);
+    });
+    return () => { active = false; };
+  }, [user?.id]);
+
   // Handle Purchase Confirmation for authenticated users
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || !buyerDeviceId || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -188,6 +211,7 @@ function MarketplaceContent() {
     try {
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
+        buyerDeviceId,
         buyerLatitude: latitude,
         buyerLongitude: longitude,
       });
@@ -202,8 +226,8 @@ function MarketplaceContent() {
         deviceId: intentRes.purchase.deviceId,
       });
 
-      if (paymentRes.success && paymentRes.data?.authorization_url) {
-        window.location.href = paymentRes.data.authorization_url;
+      if (paymentRes.success && paymentRes.paymentUrl) {
+        window.location.href = paymentRes.paymentUrl;
       } else {
         throw new Error('Failed to initialize payment gateway.');
       }
@@ -682,6 +706,17 @@ function MarketplaceContent() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Credit energy to my meter</label>
+              {ownedMeters.length > 0 ? (
+                <select value={buyerDeviceId} onChange={(event) => setBuyerDeviceId(event.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-white">
+                  {ownedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
+                </select>
+              ) : (
+                <p className="text-xs text-red-600">No meter is assigned to your account. Register a meter before checkout.</p>
+              )}
+            </div>
+
             {/* kWh Input */}
             <div>
               <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -730,7 +765,7 @@ function MarketplaceContent() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0}
+                disabled={purchasing || numKwh <= 0 || !buyerDeviceId}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (
@@ -776,7 +811,19 @@ function MarketplaceContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center text-white text-xs font-bold">Loading PAYGO Marketplace...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 text-white">
+        <div className="relative w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <svg viewBox="0 0 48 48" className="w-9 h-9 text-amber-400" fill="none" aria-hidden="true">
+            <rect x="8" y="15" width="29" height="19" rx="4" stroke="currentColor" strokeWidth="2.5" />
+            <path d="M38 21v7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            <path d="m25 17-8 10h7l-1 7 9-12h-7l1-5Z" fill="currentColor" className="animate-pulse" />
+          </svg>
+          <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+        </div>
+        <p className="text-xs font-semibold text-zinc-400">Getting PAYGO ready…</p>
+      </div>
+    }>
       <MarketplaceContent />
     </Suspense>
   );

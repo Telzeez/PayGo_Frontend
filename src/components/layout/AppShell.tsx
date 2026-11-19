@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 // Premium Inline SVGs (Lucide)
 const ZapIcon = ({ className }: { className?: string }) => (
@@ -33,12 +34,6 @@ const HistoryIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const KeyIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-  </svg>
-);
-
 const MarketIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="11" cy="11" r="8"></circle>
@@ -56,6 +51,7 @@ const BookIcon = ({ className }: { className?: string }) => (
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { devices, selectedDeviceId, selectDevice } = useDevices();
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
@@ -63,7 +59,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },
-    { label: 'Tokens', path: '/tokens', icon: KeyIcon },
+    { label: 'Usage', path: '/consumption', icon: HistoryIcon },
     { label: 'Profile', path: '/profile', icon: UserIcon },
   ];
 
@@ -101,6 +97,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         
         <div className="flex items-center gap-2.5">
+          {devices.length > 1 && (
+            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[145px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+              {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
+            </select>
+          )}
           {user?.role === 'OWNER' && (
             <Link
               href="/admin"
@@ -161,7 +162,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
         <ul className="flex justify-around items-center p-2 max-w-md mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'History', 'Profile'].includes(item.label)).map((item) => {
+          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'History', 'Usage', 'Profile'].includes(item.label)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (

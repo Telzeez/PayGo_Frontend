@@ -4,20 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { paymentApi } from '@/lib/api/payment';
 import { devicesApi } from '@/lib/api/devices';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 import Link from 'next/link';
 
 export default function VerifyPage() {
   const searchParams = useSearchParams();
   const reference = searchParams.get('reference') || searchParams.get('trxref');
+  const { selectedDeviceId } = useDevices();
   
   const [status, setStatus] = useState<'INITIALIZING' | 'VERIFYING_PAYMENT' | 'WAITING_HARDWARE' | 'CONFIRMED' | 'FAILED'>('INITIALIZING');
   const [kwhAmount, setKwhAmount] = useState<number | null>(null);
-  const [tokenCode, setTokenCode] = useState<string | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<'ONLINE' | 'OFFLINE'>('OFFLINE');
-  const [hardwareStatus, setHardwareStatus] = useState<'PENDING' | 'CONFIRMED' | 'FAILED'>('PENDING');
-
-  // Default device ID for prototype
-  const DEVICE_ID = 'DEVICE-001';
 
   useEffect(() => {
     if (!reference) {
@@ -30,6 +27,7 @@ export default function VerifyPage() {
     let hardwarePollInterval: NodeJS.Timeout;
 
     let pollCount = 0;
+    let verifiedDeviceId: string | null = null;
     const checkPayment = async () => {
       pollCount++;
       try {
@@ -38,12 +36,8 @@ export default function VerifyPage() {
           // Payment is successful in the backend DB!
           if (isMounted) {
             const data = (response as any).data || response.transaction?.data;
-            if (data && data.kwhAmount) {
-              setKwhAmount(data.kwhAmount);
-            }
-            if (data && data.fallbackToken) {
-              setTokenCode(data.fallbackToken);
-            }
+            if (data && data.kwhAmount) setKwhAmount(data.kwhAmount);
+            if (data && data.deviceId) verifiedDeviceId = data.deviceId;
             setStatus('WAITING_HARDWARE');
             clearInterval(paymentPollInterval);
             
@@ -68,7 +62,9 @@ export default function VerifyPage() {
 
     const checkHardware = async () => {
       try {
-        const deviceRes = await devicesApi.getDevice(DEVICE_ID);
+        const targetDeviceId = verifiedDeviceId || selectedDeviceId;
+        if (!targetDeviceId) return;
+        const deviceRes = await devicesApi.getDevice(targetDeviceId);
         if (deviceRes.success) {
           if (isMounted && deviceRes.status) {
             setDeviceStatus(deviceRes.status as 'ONLINE' | 'OFFLINE');
@@ -76,7 +72,6 @@ export default function VerifyPage() {
           if (deviceRes.transactions) {
             const tx = deviceRes.transactions.find(t => t.reference === reference);
             if (tx) {
-              setHardwareStatus(tx.hardwareStatus);
               if (tx.hardwareStatus === 'CONFIRMED') {
                 if (isMounted) setStatus('CONFIRMED');
                 clearInterval(hardwarePollInterval);
@@ -102,7 +97,7 @@ export default function VerifyPage() {
       clearInterval(paymentPollInterval);
       clearInterval(hardwarePollInterval);
     };
-  }, [reference]);
+  }, [reference, selectedDeviceId]);
 
   const CheckIcon = () => (
     <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
@@ -138,7 +133,7 @@ export default function VerifyPage() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">{DEVICE_ID}</p>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-white">{selectedDeviceId || 'Selected meter'}</p>
               <p className="text-xs text-zinc-500">Ref: {reference?.substring(0, 10)}...</p>
             </div>
           </div>
@@ -175,7 +170,7 @@ export default function VerifyPage() {
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Remote Meter Credit</p>
               <p className="text-xs text-zinc-500 mt-0.5">
-                {deviceStatus === 'OFFLINE' ? 'Meter is offline. Command queued for auto-sync.' : 'Dispatching credit command via MQTT.'}
+                {deviceStatus === 'OFFLINE' ? 'Meter is offline. Credit will sync automatically when it reconnects.' : 'Synchronising meter balance over HTTPS.'}
               </p>
             </div>
           </div>
@@ -196,7 +191,7 @@ export default function VerifyPage() {
         {status === 'CONFIRMED' && (
           <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl p-5 text-center mb-6">
             <h3 className="text-emerald-800 dark:text-emerald-400 font-bold mb-1">Recharge Confirmed</h3>
-            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">{Number(kwhAmount).toFixed(2)} kWh has been credited to {DEVICE_ID}.</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-500 font-medium">{Number(kwhAmount).toFixed(2)} kWh has been credited to {selectedDeviceId || 'Selected meter'}.</p>
           </div>
         )}
 
@@ -211,23 +206,9 @@ export default function VerifyPage() {
               <span>Payment Successful (Meter Offline)</span>
             </div>
             <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
-              Your financial balance has been credited. The backend will automatically send energy to your meter as soon as it reconnects online.
+              Your balance has been updated on the server. The meter will retrieve it through HTTPS when it reconnects online.
             </p>
-            {tokenCode ? (
-              <div className="mt-3 p-3 bg-white dark:bg-[#1A1A1E] rounded-xl border border-amber-200/50 dark:border-amber-500/10">
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-1 uppercase tracking-wider">SMS Token Simulation</p>
-                <div className="flex justify-between items-center">
-                  <p className="text-lg font-mono font-bold tracking-widest text-zinc-900 dark:text-white">{tokenCode}</p>
-                </div>
-                <p className="text-[10px] text-amber-700/70 dark:text-amber-500/70 mt-2 leading-tight">
-                  For this prototype demo, the token is displayed above instead of arriving via real SMS. You can input this manually on the meter keypad!
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">
-                🔑 An <strong>SMS Recovery Token</strong> was sent to your mobile phone to input manually on the meter keypad if offline.
-              </p>
-            )}
+            <p className="text-xs text-amber-900 dark:text-amber-400 font-medium pt-1">No keypad code is required. The meter will receive its balance automatically when it reconnects.</p>
           </div>
         )}
 
@@ -235,7 +216,7 @@ export default function VerifyPage() {
           <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl p-5 text-center mb-6">
             <h3 className="text-red-800 dark:text-red-400 font-bold mb-1">Recharge Needs Attention</h3>
             <p className="text-xs text-red-700 dark:text-red-500 font-medium">
-              Payment was received, but meter credit could not be verified automatically. Please check your SMS for your 16-digit token code.
+              Payment was received, but meter credit could not be verified yet. Keep the meter connected to Wi-Fi so it can synchronise its balance.
             </p>
           </div>
         )}

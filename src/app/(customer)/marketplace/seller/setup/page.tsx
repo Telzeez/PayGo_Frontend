@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { marketplaceApi } from '@/lib/api/marketplace';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function SellerSetupPage() {
   const router = useRouter();
+  const { selectedDeviceId } = useDevices();
   
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
-  const [deviceId, setDeviceId] = useState('DEVICE-001');
+  const [deviceId, setDeviceId] = useState('');
   const [sourceLat, setSourceLat] = useState('7.4400');
   const [sourceLon, setSourceLon] = useState('3.9000');
   const [serviceRadius, setServiceRadius] = useState('500');
@@ -16,6 +18,10 @@ export default function SellerSetupPage() {
   const [creatingSource, setCreatingSource] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  React.useEffect(() => {
+    if (selectedDeviceId) setDeviceId(selectedDeviceId);
+  }, [selectedDeviceId]);
 
   const handleCreateSource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +94,7 @@ export default function SellerSetupPage() {
             onChange={(e) => setDeviceId(e.target.value)}
             required
             className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 font-mono text-zinc-900 dark:text-white focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all outline-none"
-            placeholder="DEVICE-001"
+            placeholder="Enter your registered PAYGO meter ID"
           />
           <p className="text-xs text-zinc-500 mt-2">The unique ID of the physical meter you are using to supply energy.</p>
         </div>

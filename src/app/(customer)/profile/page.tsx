@@ -5,9 +5,11 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse } from '@/lib/types';
 import Link from 'next/link';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
+  const { selectedDeviceId, loadingDevices, refreshDevices } = useDevices();
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,13 +21,15 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
-
-  const DEVICE_ID = 'DEVICE-001';
+  const [resetModal, setResetModal] = useState<'confirm' | 'offline' | 'success' | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
 
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const res = await devicesApi.getDevice(DEVICE_ID);
+        if (!selectedDeviceId) { setDevice(null); return; }
+        const res = await devicesApi.getDevice(selectedDeviceId);
         if (res.success) {
           setDevice(res);
         }
@@ -36,8 +40,46 @@ export default function ProfilePage() {
       }
     };
 
-    fetchProfileData();
-  }, []);
+    if (!loadingDevices) fetchProfileData();
+  }, [selectedDeviceId, loadingDevices]);
+
+
+  const openResetModal = async () => {
+    if (!selectedDeviceId) return;
+    setResetError('');
+    try {
+      const latest = await devicesApi.getDevice(selectedDeviceId);
+      const lastSeenMs = latest.lastSeenAt ? new Date(latest.lastSeenAt).getTime() : 0;
+      const isFresh = lastSeenMs > 0 && Date.now() - lastSeenMs <= 12000;
+      if (latest.status !== 'ONLINE' || !isFresh) {
+        setResetModal('offline');
+        return;
+      }
+      setResetModal('confirm');
+    } catch (error: any) {
+      setResetError(error.message || 'Unable to check meter status. Please try again.');
+    }
+  };
+
+  const confirmBalanceReset = async () => {
+    if (!selectedDeviceId) return;
+    setResetLoading(true);
+    setResetError('');
+    try {
+      await devicesApi.resetBalance(selectedDeviceId);
+      setDevice((current) => current ? { ...current, balance: 0 } : current);
+      await refreshDevices();
+      setResetModal('success');
+    } catch (error: any) {
+      if (error?.data?.code === 'DEVICE_OFFLINE' || error?.status === 409) {
+        setResetModal('offline');
+      } else {
+        setResetError(error.message || 'Unable to reset meter balance.');
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const openEditModal = () => {
     setEditEmail(user?.email || '');
@@ -155,7 +197,7 @@ export default function ProfilePage() {
           <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs text-zinc-500">Device ID</p>
-              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{DEVICE_ID}</p>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white font-mono mt-0.5 break-all">{selectedDeviceId || 'No meter selected'}</p>
             </div>
             <div className="sm:text-right shrink-0">
               <p className="text-xs text-zinc-500">Current Balance</p>
@@ -182,6 +224,25 @@ export default function ProfilePage() {
         </div>
       </section>
 
+
+      {/* Owner Device Settings */}
+      <section className="bg-white dark:bg-[#121214] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-zinc-900 dark:text-white">Owner Settings</h2>
+          <p className="text-xs text-zinc-500 mt-1">Manage actions for {selectedDeviceId || 'your selected meter'}.</p>
+        </div>
+        <div className="rounded-2xl bg-red-50/70 dark:bg-red-500/5 border border-red-100 dark:border-red-900/30 p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Reset device balance</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Set this meter's available energy balance to 0.000 kWh. Your payments, top-ups and usage history will remain unchanged.</p>
+          </div>
+          <button type="button" onClick={openResetModal} disabled={!selectedDeviceId || loadingDevices || resetLoading} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50 transition-colors">
+            Reset Meter Balance
+          </button>
+          {resetError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{resetError}</p>}
+        </div>
+      </section>
+
       {/* Logout Card */}
       <button
         onClick={logout}
@@ -194,6 +255,49 @@ export default function ProfilePage() {
         </svg>
         Sign Out of Account
       </button>
+
+
+      {/* Device balance reset dialogs */}
+      {resetModal && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !resetLoading && setResetModal(null)}>
+          <div className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-5" onClick={(event) => event.stopPropagation()}>
+            {resetModal === 'offline' ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl">!</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Meter is offline</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">You can't do this now because the meter is offline. Reconnect the meter and try again.</p>
+                </div>
+                <button type="button" onClick={() => setResetModal(null)} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold">Okay</button>
+              </>
+            ) : resetModal === 'success' ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl">✓</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Reset request sent</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">The server balance is now 0.000 kWh. Your meter will apply the reset and save it locally on its next HTTPS heartbeat.</p>
+                </div>
+                <button type="button" onClick={() => setResetModal(null)} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold">Done</button>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-500/10 text-red-600 flex items-center justify-center text-xl">!</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Reset meter balance?</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">This will set {selectedDeviceId} to 0.000 kWh. This action cannot be undone. Existing payment and consumption history will not be deleted.</p>
+                </div>
+                {resetError && <p role="alert" className="text-xs text-red-600">{resetError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" disabled={resetLoading} onClick={() => setResetModal(null)} className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold">Cancel</button>
+                  <button type="button" disabled={resetLoading} onClick={confirmBalanceReset} className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50">
+                    {resetLoading ? 'Resetting…' : 'Confirm Reset'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit Profile Modal */}
       {isEditing && (
@@ -243,7 +347,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  Phone Number (SMS Token Delivery)
+                  Phone Number
                 </label>
                 <input
                   type="tel"

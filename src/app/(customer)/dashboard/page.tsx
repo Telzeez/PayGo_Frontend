@@ -5,15 +5,14 @@ import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function Dashboard() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-
-  // Default device ID for prototype
-  const DEVICE_ID = 'DEVICE-001';
+  const { devices, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
 
   useEffect(() => {
     let mounted = true;
@@ -21,7 +20,11 @@ export default function Dashboard() {
     const fetchDevice = async (isPolling = false) => {
       if (isPolling) setIsRefreshing(true);
       try {
-        const response = await devicesApi.getDevice(DEVICE_ID);
+        if (!selectedDeviceId) {
+          if (!loadingDevices && mounted) setError(deviceError || 'No meters are assigned to this account yet.');
+          return;
+        }
+        const response = await devicesApi.getDevice(selectedDeviceId);
         if (mounted && response.success) {
           setDeviceData(response);
           setError('');
@@ -40,14 +43,14 @@ export default function Dashboard() {
       }
     };
 
-    fetchDevice();
-    const interval = setInterval(() => fetchDevice(true), 3000); // Fast 3s real-time polling for instant status & balance updates
+    if (!loadingDevices) fetchDevice();
+    const interval = setInterval(() => { if (!loadingDevices) fetchDevice(true); }, 3000);
 
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [selectedDeviceId, loadingDevices, deviceError]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount);
@@ -62,7 +65,7 @@ export default function Dashboard() {
     }).format(new Date(isoString));
   };
 
-  if (loading) {
+  if (loading || loadingDevices) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
         <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 h-64 border border-zinc-200/60 dark:border-zinc-800/60"></section>
@@ -105,15 +108,20 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || DEVICE_ID}</h2>
+            {devices.length > 1 ? (
+              <select value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="mt-1 max-w-[220px] bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-white">
+                {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2"><h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || selectedDeviceId || 'Select a meter'}</h2>
               {isRefreshing && (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-zinc-400 animate-spin">
                   <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
                   <path d="M21 3v5h-5"></path>
                 </svg>
               )}
-            </div>
+              </div>
+            )}
           </div>
           
           {isMeterOnline ? (
@@ -157,20 +165,13 @@ export default function Dashboard() {
         </div>
 
         {/* Intuitive Quick Navigation Grid */}
-        <div className="grid grid-cols-3 gap-2.5 mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-center text-xs font-semibold">
+        <div className="grid grid-cols-2 gap-2.5 mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-center text-xs font-semibold">
           <Link href="/transactions" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500">
               <path d="M3 3v18h18" />
               <path d="m19 9-5 5-4-4-3 3" />
             </svg>
             <span>History</span>
-          </Link>
-
-          <Link href="/tokens" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500">
-              <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-            </svg>
-            <span>Tokens</span>
           </Link>
 
           <Link href="/profile" className="p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors flex flex-col items-center gap-1">
@@ -198,7 +199,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {transactions?.map((tx: Transaction) => {
+          {[...(transactions || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5).map((tx: Transaction) => {
             const isConfirmed = tx.hardwareStatus === 'CONFIRMED';
             const isPending = tx.hardwareStatus === 'PENDING';
             const isFailed = tx.hardwareStatus === 'FAILED';

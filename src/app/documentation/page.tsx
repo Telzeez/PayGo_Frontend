@@ -93,7 +93,7 @@ export default function DocumentationPage() {
     },
     {
       q: "What if my mobile internet connection drops right after I pay?",
-      a: "PAYGO generates an encrypted 16-digit token code on your confirmation screen and sends it to your mobile phone via SMS. You can type this code manually into your meter's physical keypad."
+      a: "Your payment remains recorded on the server. The meter receives the updated balance automatically over HTTPS when it reconnects. No keypad code is required."
     },
     {
       q: "Is PAYGO safe for my household electrical appliances?",
@@ -426,7 +426,7 @@ export default function DocumentationPage() {
                   </div>
                   <div className="space-y-2 text-zinc-600 dark:text-zinc-300 leading-relaxed">
                     <p>
-                      Paystack confirms payment. The server sets transaction status to <strong>Payment: SUCCESSFUL</strong> and transmits a 5.0 kWh credit payload via MQTT to Chidi's ESP32 smart meter.
+                      Paystack confirms payment. The server sets transaction status to <strong>Payment: SUCCESSFUL</strong> and updates the meter balance on the server; the ESP32 retrieves the balance through its HTTPS heartbeat.
                     </p>
                     <p>
                       The meter's internal relay closes, turning ON electricity immediately. As Chidi uses electricity, the PZEM sensor measures actual consumption in real-time, counting down credit from 5.0 kWh to 0.0 kWh.

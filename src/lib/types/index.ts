@@ -24,6 +24,7 @@ export interface DeviceResponse {
   lastSeenAt: string | null;
   lastUpdated: string;
   transactions: Transaction[];
+  readings?: Array<{ id: number; kwhConsumed: number; source: string; recordedAt: string }>;
 }
 
 export interface UserProfile {

@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 // Premium Inline SVGs (Lucide)
 const ZapIcon = ({ className }: { className?: string }) => (
@@ -50,6 +51,7 @@ const BookIcon = ({ className }: { className?: string }) => (
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { devices, selectedDeviceId, selectDevice } = useDevices();
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
@@ -94,6 +96,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         
         <div className="flex items-center gap-2.5">
+          {devices.length > 1 && (
+            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[145px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+              {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
+            </select>
+          )}
           {user?.role === 'OWNER' && (
             <Link
               href="/admin"

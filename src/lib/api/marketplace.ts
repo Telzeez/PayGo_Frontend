@@ -7,6 +7,7 @@ export interface NearbyListing {
   sellerId: number;
   sellerEmail?: string;
   deviceId: string;
+  sellerDeviceId?: string;
   distanceMeters: number;
   effectiveRadiusMeters: number;
   availableKwh: number;
@@ -131,6 +132,7 @@ export const marketplaceApi = {
     listingId: number,
     data: {
       kwhRequested: number;
+      buyerDeviceId: string;
       buyerLatitude: number;
       buyerLongitude: number;
     }

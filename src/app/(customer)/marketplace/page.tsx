@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
+import { devicesApi } from '@/lib/api/devices';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -33,6 +34,8 @@ export default function BuyerMarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
+  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
+  const [buyerDeviceId, setBuyerDeviceId] = useState('');
 
   const [isDemoLocation, setIsDemoLocation] = useState(false);
 
@@ -92,9 +95,29 @@ export default function BuyerMarketplacePage() {
     }
   }, [locationGranted, latitude, longitude, radiusMeters]);
 
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setOwnedMeters([]);
+      setBuyerDeviceId('');
+      return () => { active = false; };
+    }
+    devicesApi.getDevices().then((response) => {
+      if (!active) return;
+      const meters = response.devices || [];
+      setOwnedMeters(meters);
+      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
+        ? current
+        : meters[0]?.deviceId || '');
+    }).catch((error) => {
+      if (active) console.error('Unable to load buyer meters:', error);
+    });
+    return () => { active = false; };
+  }, [user?.id]);
+
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || !buyerDeviceId || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -109,6 +132,7 @@ export default function BuyerMarketplacePage() {
       // Step 1: Create Concurrency-Safe Reserved Purchase Intent
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
+        buyerDeviceId,
         buyerLatitude: latitude,
         buyerLongitude: longitude,
       });
@@ -395,6 +419,17 @@ export default function BuyerMarketplacePage() {
                 <span className="text-zinc-500">Tariff Rate</span>
                 <span className="font-bold text-zinc-900 dark:text-white">₦{selectedListing.pricePerKwh}/kWh</span>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Credit energy to my meter</label>
+              {ownedMeters.length > 0 ? (
+                <select value={buyerDeviceId} onChange={(event) => setBuyerDeviceId(event.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-white">
+                  {ownedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
+                </select>
+              ) : (
+                <p className="text-xs text-red-600">No meter is assigned to your account. Register a meter before checkout.</p>
+              )}
             </div>
 
             {/* kWh Input */}

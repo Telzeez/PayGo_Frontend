@@ -16,7 +16,7 @@ export default function AdminDashboardPage() {
     if (!isPolling && !deviceData) setLoading(true);
     if (isPolling) setIsRefreshing(true);
     try {
-      const res = await devicesApi.getDevice(DEVICE_ID);
+      const res = await devicesApi.getPlatformDevice(DEVICE_ID);
       if (res.success) {
         setDeviceData(res);
       }

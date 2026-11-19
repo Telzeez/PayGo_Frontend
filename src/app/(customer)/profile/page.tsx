@@ -5,9 +5,11 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse } from '@/lib/types';
 import Link from 'next/link';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
+  const { selectedDeviceId, loadingDevices } = useDevices();
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,12 +22,11 @@ export default function ProfilePage() {
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
 
-  const DEVICE_ID = 'DEVICE-001';
-
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const res = await devicesApi.getDevice(DEVICE_ID);
+        if (!selectedDeviceId) { setDevice(null); return; }
+        const res = await devicesApi.getDevice(selectedDeviceId);
         if (res.success) {
           setDevice(res);
         }
@@ -36,8 +37,8 @@ export default function ProfilePage() {
       }
     };
 
-    fetchProfileData();
-  }, []);
+    if (!loadingDevices) fetchProfileData();
+  }, [selectedDeviceId, loadingDevices]);
 
   const openEditModal = () => {
     setEditEmail(user?.email || '');

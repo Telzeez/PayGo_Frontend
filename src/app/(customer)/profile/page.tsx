@@ -228,7 +228,7 @@ export default function ProfilePage() {
       {/* Owner Device Settings */}
       <section className="bg-white dark:bg-[#121214] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-3">
         <div>
-          <h2 className="text-base font-bold text-zinc-900 dark:text-white">Device Settings</h2>
+          <h2 className="text-base font-bold text-zinc-900 dark:text-white">Owner Settings</h2>
           <p className="text-xs text-zinc-500 mt-1">Manage actions for {selectedDeviceId || 'your selected meter'}.</p>
         </div>
         <div className="rounded-2xl bg-red-50/70 dark:bg-red-500/5 border border-red-100 dark:border-red-900/30 p-4 space-y-3">

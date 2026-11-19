@@ -55,7 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
-    { label: 'EDH', path: '/', icon: MarketIcon },
+    { label: 'EDH', path: '/marketplace', icon: MarketIcon },
     { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },
@@ -104,14 +104,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           )}
           {user?.role === 'OWNER' && (
             <Link
-              href="/admin"
+              href="/marketplace/seller"
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                pathname === '/admin'
+                pathname === '/marketplace/seller'
                   ? 'bg-amber-500 text-zinc-950 font-extrabold shadow-sm'
                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
               }`}
             >
-              <span>Admin Mode</span>
+              <span>Seller Portal</span>
             </Link>
           )}
 

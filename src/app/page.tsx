@@ -226,8 +226,8 @@ function MarketplaceContent() {
         deviceId: intentRes.purchase.deviceId,
       });
 
-      if (paymentRes.success && paymentRes.data?.authorization_url) {
-        window.location.href = paymentRes.data.authorization_url;
+      if (paymentRes.success && paymentRes.paymentUrl) {
+        window.location.href = paymentRes.paymentUrl;
       } else {
         throw new Error('Failed to initialize payment gateway.');
       }
@@ -765,7 +765,7 @@ function MarketplaceContent() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0}
+                disabled={purchasing || numKwh <= 0 || !buyerDeviceId}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

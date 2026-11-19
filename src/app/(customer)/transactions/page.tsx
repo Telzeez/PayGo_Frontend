@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
 import { Transaction, HardwareStatus } from '@/lib/types';
 import Link from 'next/link';
+import { useDevices } from '@/lib/contexts/DeviceContext';
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -11,14 +12,14 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'PENDING' | 'FAILED' | 'TOPUP' | 'CONSUMPTION'>('ALL');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-
-  const DEVICE_ID = 'DEVICE-001';
+  const { selectedDeviceId, loadingDevices } = useDevices();
 
   const fetchTransactions = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await devicesApi.getDevice(DEVICE_ID);
+      if (!selectedDeviceId) { setTransactions([]); return; }
+      const res = await devicesApi.getDevice(selectedDeviceId);
       if (res.success && res.transactions) {
         setTransactions(res.transactions);
       } else {
@@ -33,8 +34,8 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    if (!loadingDevices) fetchTransactions();
+  }, [selectedDeviceId, loadingDevices]);
 
   const filteredTransactions = transactions.filter((tx) => {
     if (filter === 'ALL') return true;
@@ -115,7 +116,7 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Transaction History</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Real-time ledger of energy purchases and hardware credits for <span className="font-semibold text-zinc-700 dark:text-zinc-300">{DEVICE_ID}</span>
+              Real-time ledger of energy purchases and hardware credits for <span className="font-semibold text-zinc-700 dark:text-zinc-300">{selectedDeviceId || 'No meter selected'}</span>
             </p>
           </div>
         </div>
@@ -308,19 +309,11 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
 
             {selectedTx.hardwareStatus === 'PENDING' && (
               <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-400 leading-relaxed">
-                ℹ️ <strong>Remote Credit Pending:</strong> Financial credit is recorded in your ledger. If the meter is offline, it will auto-sync when reconnected, or check SMS for your 16-digit recovery token.
+                ℹ️ <strong>Remote Credit Pending:</strong> Your top-up is recorded. The meter will receive the credit automatically over HTTPS when it reconnects.
               </div>
             )}
 
             <div className="flex gap-3 pt-2">
-              {selectedTx.type === 'topup' && selectedTx.reference && (
-                <Link
-                  href={`/verify?reference=${selectedTx.reference}`}
-                  className="flex-1 bg-emerald-600 dark:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl text-xs text-center hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all flex items-center justify-center shadow-sm"
-                >
-                  View Live Status
-                </Link>
-              )}
               <button
                 onClick={() => setSelectedTx(null)}
                 className="flex-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm"

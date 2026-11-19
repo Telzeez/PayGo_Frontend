@@ -256,6 +256,49 @@ export default function ProfilePage() {
         Sign Out of Account
       </button>
 
+
+      {/* Device balance reset dialogs */}
+      {resetModal && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !resetLoading && setResetModal(null)}>
+          <div className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-5" onClick={(event) => event.stopPropagation()}>
+            {resetModal === 'offline' ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl">!</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Meter is offline</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">You can't do this now because the meter is offline. Reconnect the meter and try again.</p>
+                </div>
+                <button type="button" onClick={() => setResetModal(null)} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold">Okay</button>
+              </>
+            ) : resetModal === 'success' ? (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl">✓</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Reset request sent</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">The server balance is now 0.000 kWh. Your meter will apply the reset and save it locally on its next HTTPS heartbeat.</p>
+                </div>
+                <button type="button" onClick={() => setResetModal(null)} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-bold">Done</button>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-500/10 text-red-600 flex items-center justify-center text-xl">!</div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">Reset meter balance?</h3>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">This will set {selectedDeviceId} to 0.000 kWh. This action cannot be undone. Existing payment and consumption history will not be deleted.</p>
+                </div>
+                {resetError && <p role="alert" className="text-xs text-red-600">{resetError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" disabled={resetLoading} onClick={() => setResetModal(null)} className="flex-1 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold">Cancel</button>
+                  <button type="button" disabled={resetLoading} onClick={confirmBalanceReset} className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50">
+                    {resetLoading ? 'Resetting…' : 'Confirm Reset'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Edit Profile Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">

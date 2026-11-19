@@ -13,6 +13,12 @@ export const devicesApi = {
       { method: 'GET', requireAuth: true }
     ),
 
+  getConsumption: async (deviceId: string, period: 'day' | 'week' | 'month') =>
+    apiClient<{ success: boolean; deviceId: string; period: string; readings: Array<{ date: string; kwhConsumed: number }> }>(
+      `/api/owner/devices/${encodeURIComponent(deviceId)}/consumption?period=${period}`,
+      { method: 'GET', requireAuth: true }
+    ),
+
   getTokens: async (deviceId: string) => {
     return apiClient<{ success: boolean; deviceId: string; tokens: any[] }>(
       `/api/devices/${encodeURIComponent(deviceId)}/tokens`,

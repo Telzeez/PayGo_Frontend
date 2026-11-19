@@ -243,7 +243,7 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">
-                  Phone Number (SMS Token Delivery)
+                  Phone Number
                 </label>
                 <input
                   type="tel"

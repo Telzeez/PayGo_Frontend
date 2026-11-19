@@ -27,6 +27,7 @@ export default function VerifyPage() {
     let hardwarePollInterval: NodeJS.Timeout;
 
     let pollCount = 0;
+    let verifiedDeviceId: string | null = null;
     const checkPayment = async () => {
       pollCount++;
       try {
@@ -35,9 +36,8 @@ export default function VerifyPage() {
           // Payment is successful in the backend DB!
           if (isMounted) {
             const data = (response as any).data || response.transaction?.data;
-            if (data && data.kwhAmount) {
-              setKwhAmount(data.kwhAmount);
-            }
+            if (data && data.kwhAmount) setKwhAmount(data.kwhAmount);
+            if (data && data.deviceId) verifiedDeviceId = data.deviceId;
             setStatus('WAITING_HARDWARE');
             clearInterval(paymentPollInterval);
             
@@ -62,8 +62,9 @@ export default function VerifyPage() {
 
     const checkHardware = async () => {
       try {
-        if (!selectedDeviceId) return;
-        const deviceRes = await devicesApi.getDevice(selectedDeviceId);
+        const targetDeviceId = verifiedDeviceId || selectedDeviceId;
+        if (!targetDeviceId) return;
+        const deviceRes = await devicesApi.getDevice(targetDeviceId);
         if (deviceRes.success) {
           if (isMounted && deviceRes.status) {
             setDeviceStatus(deviceRes.status as 'ONLINE' | 'OFFLINE');

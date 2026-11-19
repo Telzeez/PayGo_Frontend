@@ -7,6 +7,9 @@ export const devicesApi = {
     lastSeenAt: string | null; lastUpdated: string | null;
   }> }>('/api/owner/devices', { method: 'GET', requireAuth: true }),
 
+  getPlatformDevice: async (deviceId: string) =>
+    apiClient<DeviceResponse>(`/api/devices/${encodeURIComponent(deviceId)}`, { method: 'GET', requireAuth: true }),
+
   getDevice: async (deviceId: string) =>
     apiClient<DeviceResponse & { readings?: Array<{ id: number; kwhConsumed: number; source: string; recordedAt: string }> }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}`,

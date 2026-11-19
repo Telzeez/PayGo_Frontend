@@ -2,6 +2,11 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
+  claimDevice: async (deviceId: string) => apiClient<{ success: boolean; device: { deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE' }; message: string }>(
+    '/api/owner/devices/claim',
+    { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId }) }
+  ),
+
   getDevices: async () => apiClient<{ success: boolean; devices: Array<{
     deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
     lastSeenAt: string | null; lastUpdated: string | null;

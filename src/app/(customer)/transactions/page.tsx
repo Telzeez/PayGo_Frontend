@@ -10,7 +10,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'PENDING' | 'FAILED' | 'TOPUP' | 'CONSUMPTION'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'PENDING' | 'FAILED' | 'TOPUP'>('ALL');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const { selectedDeviceId, loadingDevices } = useDevices();
 
@@ -40,7 +40,6 @@ export default function TransactionsPage() {
   const filteredTransactions = transactions.filter((tx) => {
     if (filter === 'ALL') return true;
     if (filter === 'TOPUP') return tx.type === 'topup';
-    if (filter === 'CONSUMPTION') return tx.type === 'consumption';
     return tx.hardwareStatus === filter;
   });
 
@@ -140,7 +139,6 @@ const ZapIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
           { id: 'PENDING', label: 'Pending' },
           { id: 'FAILED', label: 'Failed' },
           { id: 'TOPUP', label: 'Top-ups' },
-          { id: 'CONSUMPTION', label: 'Consumption' },
         ].map((tab) => (
           <button
             key={tab.id}

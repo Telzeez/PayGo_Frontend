@@ -12,8 +12,11 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
   
-  const { register } = useAuth();
+  const { register, resendVerification } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +39,7 @@ export default function RegisterPage() {
       }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
+      setShowResend(err?.data?.code === 'VERIFICATION_EMAIL_UNAVAILABLE');
     } finally {
       setIsSubmitting(false);
     }
@@ -49,6 +53,19 @@ export default function RegisterPage() {
           <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm font-medium border border-red-100 dark:border-red-500/20">
             {error}
           </div>
+        )}
+        {showResend && (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={isResending || !email}
+            className="w-full rounded-xl border border-amber-300 dark:border-amber-700 px-4 py-3 text-sm font-semibold text-amber-800 dark:text-amber-300 disabled:opacity-60"
+          >
+            {isResending ? 'Sending new link...' : 'Resend verification email'}
+          </button>
+        )}
+        {resendMessage && (
+          <p role="status" className="text-sm text-zinc-600 dark:text-zinc-300">{resendMessage}</p>
         )}
 
         <div>

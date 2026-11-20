@@ -10,6 +10,7 @@ import { useDevices } from '@/lib/contexts/DeviceContext';
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
   const { selectedDeviceId, loadingDevices, refreshDevices } = useDevices();
+  const hasMeter = Boolean(selectedDeviceId && device);
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -208,24 +209,24 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <Link
-            href="/recharge"
-            className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3 px-4 rounded-2xl text-xs text-center hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
-          >
-            Recharge Meter
-          </Link>
-          <Link
-            href="/transactions"
-            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold py-3 px-4 rounded-2xl text-xs text-center hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-all shadow-sm active:scale-95"
-          >
+        <div className={hasMeter ? "grid grid-cols-2 gap-3 pt-2" : "pt-2"}>
+          {hasMeter && (
+            <Link href="/recharge" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3 px-4 rounded-2xl text-xs text-center hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95">
+              Recharge Meter
+            </Link>
+          )}
+          <Link href="/transactions" className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold py-3 px-4 rounded-2xl text-xs text-center hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-all shadow-sm active:scale-95">
             View History
           </Link>
         </div>
+        {!loading && !hasMeter && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">No meter has been assigned to this account yet. PAYGO will display your meter details here after assignment and activation.</p>
+        )}
       </section>
 
 
-      {/* Owner Device Settings */}
+      {/* Owner Device Settings — only available to an owner with an activated meter */}
+      {hasMeter && user?.role === 'OWNER' && (
       <section className="bg-white dark:bg-[#121214] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-3">
         <div>
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">Owner Settings</h2>
@@ -242,6 +243,7 @@ export default function ProfilePage() {
           {resetError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{resetError}</p>}
         </div>
       </section>
+      )}
 
       {/* Logout Card */}
       <button

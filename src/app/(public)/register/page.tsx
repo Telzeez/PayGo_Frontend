@@ -71,17 +71,32 @@ export default function RegisterPage() {
           </div>
         )}
         {showResend && (
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={isResending || !email}
-            className="w-full rounded-xl border border-amber-300 dark:border-amber-700 px-4 py-3 text-sm font-semibold text-amber-800 dark:text-amber-300 disabled:opacity-60"
-          >
-            {isResending ? 'Sending new link...' : 'Resend verification email'}
-          </button>
-        )}
-        {resendMessage && (
-          <p role="status" className="text-sm text-zinc-600 dark:text-zinc-300">{resendMessage}</p>
+          <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-500/20 dark:bg-amber-500/5" aria-labelledby="register-resend-title">
+            <div>
+              <h2 id="register-resend-title" className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Your account is created, but email verification is pending</h2>
+              <p className="mt-1 text-sm leading-5 text-zinc-600 dark:text-zinc-400">The verification email could not be delivered. You can try requesting a new link.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={isResending || !email.trim()}
+              aria-busy={isResending}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            >
+              {isResending ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-90" d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  Sending verification link…
+                </>
+              ) : 'Resend verification email'}
+            </button>
+            {resendMessage && (
+              <p role="status" aria-live="polite" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-5 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">{resendMessage}</p>
+            )}
+          </section>
         )}
 
         <div>

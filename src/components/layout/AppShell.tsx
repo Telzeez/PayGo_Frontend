@@ -55,7 +55,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
-    { label: 'EDH', path: '/marketplace', icon: MarketIcon },\n    ...(user?.role === 'OWNER' ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
+    { label: 'EDH', path: '/marketplace', icon: MarketIcon },
+    ...(user?.role === 'OWNER' ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },

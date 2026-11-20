@@ -407,6 +407,11 @@ function AuthPageContent() {
               </>
             )}
           </form>
+          {isLogin && !registrationToken && (
+            <p className="mt-5 text-center text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              Existing PAYGO user signing in for the first time after the authentication update? Choose <strong>Sign Up</strong> and use the same email address. Your existing PAYGO profile and records will be linked after verification.
+            </p>
+          )}
         </div>
       )}
     </AuthLayout>

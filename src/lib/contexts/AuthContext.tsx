@@ -8,9 +8,9 @@ import {
   createFirebaseAccount,
   getFirebaseAccount,
   getFirebaseIdToken,
-  getPendingAccountRole,
-  getPendingPhone,
-  setPendingPhone,
+  getPendingSignup,
+  setPendingSignup,
+  clearPendingSignup,
   sendFirebasePasswordReset,
   sendFirebaseVerificationEmail,
   signInFirebase,
@@ -79,7 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error.data = { code: 'EMAIL_NOT_VERIFIED' };
       throw error;
     }
-    await syncProfile();
+    const pending = getPendingSignup(account.email);
+    await syncProfile(pending?.phone, pending?.role);
+    clearPendingSignup();
   };
 
   const loginWithGoogle = async (googleCredential: string, role?: string) => {
@@ -97,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (params: { email: string; password: string; phone?: string; role: string }) => {
-    setPendingAccountRole(params.role);
-    setPendingPhone(params.phone);
+    setPendingSignup(params.email, params.phone, params.role);
     const session = await createFirebaseAccount(params.email, params.password);
     await sendFirebaseVerificationEmail(session.idToken);
     return { requiresEmailVerification: true, email: params.email.trim().toLowerCase() };
@@ -108,7 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const session = await verifyFirebaseEmailCode(oobCode);
     const account = await getFirebaseAccount(session.idToken);
     if (!account.emailVerified) throw new Error('Firebase has not confirmed this email address yet.');
-    const profile = await syncProfile(getPendingPhone(), getPendingAccountRole());
+    const pending = getPendingSignup(account.email);
+    const profile = await syncProfile(pending?.phone, pending?.role);
+    clearPendingSignup();
     return profile.role;
   };
 

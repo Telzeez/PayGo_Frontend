@@ -44,7 +44,7 @@ function AuthPageContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [registrationToken, setRegistrationToken] = useState<string | null>(null);
   const [verificationPending, setVerificationPending] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');\n  const [canResendVerification, setCanResendVerification] = useState(false);
 
   const { login, register, registerGoogle, loginWithGoogle, resendVerification } = useAuth();
   const router = useRouter();
@@ -144,6 +144,9 @@ function AuthPageContent() {
               </svg>
               <span>{error}</span>
             </div>
+          )}
+          {canResendVerification && (
+            <button type="button" onClick={async () => { try { await resendVerification(email); setError('A fresh verification link has been requested. Check your inbox.'); setCanResendVerification(false); } catch (err: any) { setError(err.message || 'Could not resend the verification email.'); } }} className="mb-4 text-sm font-semibold text-amber-600 hover:text-amber-500">Resend verification email</button>
           )}
 
           {registrationToken && (

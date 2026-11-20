@@ -5,6 +5,7 @@ import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
+import { ConsumptionOverview } from '@/components/ConsumptionOverview';
 import { useDevices } from '@/lib/contexts/DeviceContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -206,88 +207,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Sleek Transactions Section */}
-      <section className="px-1 mt-2">
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Recent Transactions</h3>
-          <Link href="/transactions" className="text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium transition-colors">See all</Link>
-        </div>
-        
-        <div className="flex flex-col gap-3">
-          
-          {(!transactions || transactions.length === 0) && (
-            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400 text-sm">
-              No transactions yet. Recharge your meter to get started.
-            </div>
-          )}
-
-          {[...(transactions || [])].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5).map((tx: Transaction) => {
-            const isConfirmed = tx.hardwareStatus === 'CONFIRMED';
-            const isPending = tx.hardwareStatus === 'PENDING';
-            const isFailed = tx.hardwareStatus === 'FAILED';
-
-            return (
-              <div key={tx.id} className="bg-white dark:bg-[#121214] p-3 sm:p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50 cursor-pointer">
-                <div className="flex items-center gap-4">
-                  
-                  {isConfirmed && (
-                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <path d="M22 4L12 14.01l-3-3"></path>
-                      </svg>
-                    </div>
-                  )}
-
-                  {isPending && (
-                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>
-                    </div>
-                  )}
-
-                  {isFailed && (
-                    <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                      </svg>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-[15px]">{formatCurrency(tx.amount)}</p>
-                    <p className="text-[13px] text-zinc-500 dark:text-zinc-400 mt-0.5">{Number(tx.kwhAmount).toFixed(2)} kWh • {formatDate(tx.timestamp)}</p>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  {isConfirmed && (
-                    <span className="inline-block px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-full">
-                      Confirmed
-                    </span>
-                  )}
-                  {isPending && (
-                    <span className="inline-block px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 text-xs font-medium rounded-full flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                      Pending
-                    </span>
-                  )}
-                  {isFailed && (
-                    <span className="inline-block px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
-                      Failed
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          
-        </div>
-      </section>
+      <ConsumptionOverview deviceId={deviceId || selectedDeviceId || ''} />
     </div>
   );
 }

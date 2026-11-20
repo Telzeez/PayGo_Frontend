@@ -53,24 +53,32 @@ export default function BuyerMarketplacePage() {
         },
         (err) => {
           setLocationStatus('denied');
-          setError(err.code === err.PERMISSION_DENIED
+          setError(err.code === 1
             ? 'Location permission was denied. Enable location access in your browser settings and try again.'
-            : 'We could not determine your location. Please try again or use the manual location option.');
+            : 'We could not determine your location. Please try again.');
         },
         { timeout: 8000 }
       );
     } else {
       setLocationStatus('unavailable');
-      setError('Your browser does not support location access. Please use the manual location option.');
+      setError('Your browser does not support location access. Please try another browser or device.');
     }
   };
 
-  const confirmLocation = () => {
+  const confirmLocation = async () => {
     if (latitude === null || longitude === null) return;
-    setLocationGranted(true);
-    setLocationPendingConfirmation(false);
-    setLocationStatus('granted');
+    setLoading(true);
     setError('');
+    try {
+      await marketplaceApi.saveBuyerLocation(latitude, longitude);
+      setLocationGranted(true);
+      setLocationPendingConfirmation(false);
+      setLocationStatus('granted');
+    } catch (err: any) {
+      setError(err.message || 'Unable to save your confirmed location. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fetch Nearby Listings when coordinates or radius changes

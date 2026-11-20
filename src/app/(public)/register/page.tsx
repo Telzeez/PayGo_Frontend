@@ -10,9 +10,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  // 1. Added role state variable with 'CUSTOMER' as the default selection
-  const [role, setRole] = useState<'CUSTOMER' | 'SELLER'>('CUSTOMER'); 
-  
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -31,9 +28,12 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      // 2. Pass 'role' directly as a clean variable now that it exists in state
-      await register({ email, password, phone, role });
-      router.push('/onboarding');
+      const result = await register({ email, password, phone, role: 'BUYER' });
+      if (result.requiresEmailVerification) {
+        router.push(`/login?registered=1&email=${encodeURIComponent(email)}`);
+      } else {
+        router.push('/onboarding');
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -51,7 +51,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {/* 3. Role Selection Segmented Control Buttons */}
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
             I want to join as a:

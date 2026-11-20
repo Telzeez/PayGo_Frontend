@@ -2,10 +2,11 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
-  claimDevice: async (deviceId: string) => apiClient<{ success: boolean; device: { deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE' }; message: string }>(
-    '/api/owner/devices/claim',
-    { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId }) }
-  ),
+  activateAssignedMeter: async (deviceId: string, activationCode: string) =>
+    apiClient<{ success: boolean; deviceId: string; message: string }>(
+      '/api/owner/devices/activate',
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId, activationCode }) }
+    ),
 
   getDevices: async () => apiClient<{ success: boolean; devices: Array<{
     deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';

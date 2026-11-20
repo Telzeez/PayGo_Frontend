@@ -157,7 +157,7 @@ function AuthPageContent() {
               </svg>
               <div>
                 <p className="font-bold text-emerald-800 dark:text-emerald-300 mb-0.5">Google Verification Successful!</p>
-                <p className="text-emerald-600 dark:text-emerald-400 font-normal">Almost there! Please provide your phone number and select an account type to complete your registration.</p>
+                <p className="text-emerald-600 dark:text-emerald-400 font-normal">Almost there! Please provide your phone number to complete your registration.</p>
               </div>
             </div>
           )}
@@ -223,35 +223,6 @@ function AuthPageContent() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    How will you use PAYGO?
-                  </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRole('BUYER')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                        role === 'BUYER'
-                          ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm'
-                          : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
-                      }`}
-                    >
-                      Customer (Buyer)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole('OWNER')}
-                      className={`flex-1 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                        role === 'OWNER'
-                          ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm'
-                          : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
-                      }`}
-                    >
-                      Energy Seller (Prosumer)
-                    </button>
-                  </div>
-                </div>
               </>
             )}
 
@@ -330,7 +301,7 @@ function AuthPageContent() {
                         setError(''); // Clear error state since it's a success
                       } else {
                         setIsSuccess(true);
-                        const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
+                        const destination = !isLogin ? '/onboarding' : redirect;
                         router.replace(destination);
                       }
                     }

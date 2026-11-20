@@ -2,6 +2,20 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
+  claimRegisteredMeter: async (deviceId: string, claimCode: string) =>
+    apiClient<{ success: boolean; deviceId: string; purpose: 'GENERATION' | 'RECEIVING'; assignmentStatus: string; message: string }>(
+      '/api/meters/claim',
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId, claimCode }) }
+    ),
+
+  getMeterRegistry: async () =>
+    apiClient<{ success: boolean; ownedMeters: Array<{
+      deviceId: string; purpose: 'GENERATION' | 'RECEIVING'; assignmentStatus: string;
+      status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null;
+    }>; customerMeters: Array<{ deviceId: string; purpose: string; assignmentStatus: string; status: string; balance: number }> }>(
+      '/api/meters/me', { method: 'GET', requireAuth: true }
+    ),
+
   provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING') =>
     apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; expiresInHours: number; message: string }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/provision`,
@@ -39,10 +53,8 @@ export const devicesApi = {
       { method: 'GET', requireAuth: true }
     ),
 
-  getTokens: async (deviceId: string) => {
-    return apiClient<{ success: boolean; deviceId: string; tokens: any[] }>(
-      `/api/devices/${encodeURIComponent(deviceId)}/tokens`,
-      { method: 'GET', requireAuth: true }
-    );
-  }
+  getTokens: async (deviceId: string) => apiClient<{ success: boolean; deviceId: string; tokens: any[] }>(
+    `/api/devices/${encodeURIComponent(deviceId)}/tokens`,
+    { method: 'GET', requireAuth: true }
+  )
 };

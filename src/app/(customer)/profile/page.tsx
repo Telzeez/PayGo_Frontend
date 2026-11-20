@@ -203,7 +203,7 @@ export default function ProfilePage() {
             <div className="sm:text-right shrink-0">
               <p className="text-xs text-zinc-500">Current Balance</p>
               <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                {device ? Number(device.balance).toFixed(2) : '0.00'} kWh
+                {device ? Number(device.balance).toFixed(2) : '—'} {device ? 'kWh' : ''}
               </p>
             </div>
           </div>

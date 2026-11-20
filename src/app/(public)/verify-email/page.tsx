@@ -14,8 +14,9 @@ function VerifyEmailContent() {
   const [message, setMessage] = useState('Verifying your email address…');
   const [failed, setFailed] = useState(false);
 
+  const token = searchParams.get('token');
+
   useEffect(() => {
-    const token = searchParams.get('token');
     if (!token) {
       setFailed(true);
       setMessage('This verification link is incomplete.');
@@ -36,7 +37,7 @@ function VerifyEmailContent() {
       });
 
     return () => { active = false; };
-  }, [searchParams, router]);
+  }, [token, router]);
 
   return (
     <main className="min-h-[60vh] flex items-center justify-center px-4 py-12">

@@ -39,6 +39,14 @@ export const authApi = {
   },
 
 
+  verifyEmail: async (token: string) => {
+    return apiClient<AuthResponse>('/api/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }), requireAuth: false });
+  },
+
+  resendVerification: async (email: string) => {
+    return apiClient<{ success: boolean; message: string }>('/api/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }), requireAuth: false });
+  },
+
   register: async (data: RegisterParams) => {
     return apiClient<AuthResponse>('/api/auth/register', {
       method: 'POST',

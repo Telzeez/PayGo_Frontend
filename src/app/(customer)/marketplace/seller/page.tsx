@@ -64,7 +64,7 @@ export default function SellerMarketplacePage() {
         setLongitude(position.coords.longitude);
         setLocationConfirmed(false);
       },
-      (geoError) => setError(geoError.code === geoError.PERMISSION_DENIED
+      (geoError) => setError(geoError.code === 1
         ? 'Location permission was denied. Enable it in your browser settings and try again.'
         : 'Unable to detect the installation location. Please try again.'),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }

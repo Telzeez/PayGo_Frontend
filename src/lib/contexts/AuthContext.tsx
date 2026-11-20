@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (googleCredential: string, role?: string) => {
+  const loginWithGoogle = async (googleCredential: string, _role?: string) => {
     const session = await signInFirebaseWithGoogle(googleCredential);
     const account = await getFirebaseAccount(session.idToken);
     if (!account.emailVerified) {

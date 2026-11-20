@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     const initialize = async () => {
       try {
-        const idToken = await getFirebaseIdToken();
+        const idToken = await getFirebaseIdToken(true);
         if (!idToken) return;
         const account = await getFirebaseAccount(idToken);
         if (!account.emailVerified) return;
@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    const idToken = await getFirebaseIdToken();
+    const idToken = await getFirebaseIdToken(true);
     if (!idToken) {
       setUser(null);
       return;

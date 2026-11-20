@@ -48,7 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
-    { label: 'EDH', path: '/marketplace', icon: MarketIcon },
+    { label: 'EDH', path: '/marketplace', icon: MarketIcon },\n    { label: 'Meters', path: '/meters', icon: ZapIcon },
     ...(user?.isSeller ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     ...(devices.length > 0 ? [{ label: 'Recharge', path: '/recharge', icon: ZapIcon }] : []),
     { label: 'History', path: '/transactions', icon: HistoryIcon },
@@ -155,7 +155,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
         <ul className="flex justify-around items-center px-1 py-2 max-w-lg mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.isSeller)).map((item) => {
+          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.isSeller)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (

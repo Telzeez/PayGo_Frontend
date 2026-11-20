@@ -128,7 +128,7 @@ export default function ProfilePage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Account & Meter Profile</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Account & Meter Profile</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
               Manage your PayGo profile and device connectivity.
             </p>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
       </div>
 
       {/* User Info Card */}
-      <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-6">
+      <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-6">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xl shrink-0">
             {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}

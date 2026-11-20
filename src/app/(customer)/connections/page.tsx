@@ -265,10 +265,19 @@ export default function ConnectionsPage() {
           </div>
           {sources.map((source) => {
             const draft = capacityDrafts[source.id] || { maxCapacityW: '', maxCapacityVa: '', maxSurgeVa: '', safetyMarginPct: '' };
+            const sourceConnections = connections.filter((connection) => connection.sourceId === source.id && connection.approvedPowerW !== null);
+            const allocatedW = sourceConnections.reduce((sum, connection) => sum + Number(connection.approvedPowerW || 0), 0);
+            const allocatedVa = sourceConnections.reduce((sum, connection) => sum + Number(connection.approvedApparentVa || 0), 0);
+            const allocatedSurgeVa = sourceConnections.reduce((sum, connection) => sum + Number(connection.approvedStartingSurgeVa || 0), 0);
             return (
               <div key={source.id} className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#121214]">
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{source.name}</h3>
                 <p className="mt-1 text-xs text-zinc-500">Source #{source.id} · Generation meter {source.deviceId}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-zinc-50 p-3 text-xs dark:bg-zinc-900 sm:grid-cols-3">
+                  <div><p className="text-zinc-500">Allocated W</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedW.toFixed(0)} / {source.maxCapacityW ? Number(source.maxCapacityW).toFixed(0) : '—'} W</p></div>
+                  <div><p className="text-zinc-500">Allocated VA</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedVa.toFixed(0)} / {source.maxCapacityVa ? Number(source.maxCapacityVa).toFixed(0) : '—'} VA</p></div>
+                  <div><p className="text-zinc-500">Allocated surge</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedSurgeVa.toFixed(0)} / {source.maxSurgeVa ? Number(source.maxSurgeVa).toFixed(0) : '—'} VA</p></div>
+                </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {([
                     ['maxCapacityW', 'Continuous capacity (W)'],

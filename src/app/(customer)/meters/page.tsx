@@ -57,14 +57,14 @@ export default function MeterSetupPage() {
         <form onSubmit={handleClaim} className="space-y-4">
           <div>
             <label htmlFor="meter-device-id" className="mb-2 block text-sm font-semibold text-zinc-800 dark:text-zinc-200">Meter device ID</label>
-            <input id="meter-device-id" value={deviceId} onChange={(event) => setDeviceId(event.target.value)} required minLength={3} maxLength={50} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,49}" placeholder="e.g. PAYGO-001" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm text-zinc-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <input id="meter-device-id" value={deviceId} onChange={(event) => setDeviceId(event.target.value)} required minLength={3} maxLength={50} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,49}" placeholder="e.g. DEVICE-001" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm text-zinc-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
           </div>
           <div>
-            <label htmlFor="activation-code" className="mb-2 block text-sm font-semibold text-zinc-800 dark:text-zinc-200">One-time claim code</label>
-            <input id="activation-code" value={claimCode} onChange={(event) => setClaimCode(event.target.value.toUpperCase())} required minLength={32} maxLength={32} pattern="[A-Fa-f0-9]{32}" placeholder="32-character claim code" autoComplete="one-time-code" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm uppercase tracking-[0.2em] text-zinc-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <label htmlFor="claim-code" className="mb-2 block text-sm font-semibold text-zinc-800 dark:text-zinc-200">One-time claim code</label>
+            <input id="claim-code" value={claimCode} onChange={(event) => setClaimCode(event.target.value.toUpperCase())} required minLength={32} maxLength={32} pattern="[A-Fa-f0-9]{32}" placeholder="32-character claim code" autoComplete="one-time-code" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm uppercase tracking-[0.2em] text-zinc-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
             <p className="mt-2 text-xs text-zinc-400">The claim code expires after 30 days and can only be used once.</p>
           </div>
-          <button type="submit" disabled={submitting || !deviceId.trim() || claimCode.length !== 10} className="w-full rounded-xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="submit" disabled={submitting || !deviceId.trim() || claimCode.length !== 32} className="w-full rounded-xl bg-amber-500 px-4 py-3 font-bold text-zinc-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50">
             {submitting ? 'Claiming meter…' : 'Claim meter'}
           </button>
         </form>
@@ -72,10 +72,10 @@ export default function MeterSetupPage() {
 
       <section className="rounded-3xl border border-zinc-200/70 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-[#121214]">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold text-zinc-900 dark:text-white">Meters assigned to your account</h2>
-          <span className="text-xs text-zinc-400">{assignedMeters.length} assigned</span>
+          <h2 className="font-bold text-zinc-900 dark:text-white">Your claimed meters</h2>
+          <span className="text-xs text-zinc-400">{assignedMeters.length} claimed</span>
         </div>
-        {assignedMeters.length === 0 ? <p className="text-sm text-zinc-500">No meter has been assigned to this account yet. Contact PAYGO support if you expected one.</p> : (
+        {assignedMeters.length === 0 ? <p className="text-sm text-zinc-500">You have not claimed a meter yet.</p> : (
           <ul className="space-y-2">
             {assignedMeters.map((device) => (
               <li key={device.deviceId} className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900">

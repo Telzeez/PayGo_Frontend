@@ -61,6 +61,12 @@ function saveSession(session: FirebaseSession) {
   localStorage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
 }
 
+function clearActiveSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(ID_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 export function clearFirebaseSession() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(ID_TOKEN_KEY);
@@ -126,6 +132,7 @@ export async function createFirebaseAccount(email: string, password: string): Pr
 }
 
 export async function signInFirebase(email: string, password: string): Promise<FirebaseSession> {
+  clearActiveSession();
   const session = await requestFirebase<FirebaseSession>('accounts:signInWithPassword', {
     email: email.trim().toLowerCase(),
     password,
@@ -136,6 +143,7 @@ export async function signInFirebase(email: string, password: string): Promise<F
 }
 
 export async function signInFirebaseWithGoogle(googleIdToken: string): Promise<FirebaseSession> {
+  clearActiveSession();
   const session = await requestFirebase<FirebaseSession>('accounts:signInWithIdp', {
     postBody: `id_token=${encodeURIComponent(googleIdToken)}&providerId=google.com`,
     requestUri: typeof window !== 'undefined' ? window.location.origin : 'https://pay-go-frontend.vercel.app',

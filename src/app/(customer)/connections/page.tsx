@@ -29,6 +29,7 @@ export default function ConnectionsPage() {
   const [meters, setMeters] = useState<Array<{ deviceId: string; assignmentStatus: string; meterPurpose: string }>>([]);
   const [sourceId, setSourceId] = useState('');
   const [sourceName, setSourceName] = useState('');
+  const [editingConnectionId, setEditingConnectionId] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<Record<number, ApplianceDraft>>({});
   const [capacityDrafts, setCapacityDrafts] = useState<Record<number, CapacityDraft>>({});
   const [loading, setLoading] = useState(true);
@@ -118,13 +119,20 @@ export default function ConnectionsPage() {
     }
     setSaving(true); setError(''); setNotice('');
     try {
-      const result = await connectionsApi.createRequest({
-        sourceId: Number(sourceId),
-        appliances: buildSelections(),
-      });
-      setNotice(
-        `Connection request submitted. Estimated allocation: ${Number(result.assessment.requestedPowerW).toFixed(0)} W, ${Number(result.assessment.requestedApparentVa).toFixed(0)} VA, starting surge ${Number(result.assessment.requestedStartingSurgeVa).toFixed(0)} VA.`
-      );
+      const selections = buildSelections();
+      if (editingConnectionId !== null) {
+        const result = await connectionsApi.updateAppliances(editingConnectionId, selections);
+        setNotice(result.message);
+        setEditingConnectionId(null);
+      } else {
+        const result = await connectionsApi.createRequest({
+          sourceId: Number(sourceId),
+          appliances: selections,
+        });
+        setNotice(
+          `Connection request submitted. Estimated allocation: ${Number(result.assessment.requestedPowerW).toFixed(0)} W, ${Number(result.assessment.requestedApparentVa).toFixed(0)} VA, starting surge ${Number(result.assessment.requestedStartingSurgeVa).toFixed(0)} VA.`
+        );
+      }
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Unable to submit connection request.');
@@ -239,9 +247,12 @@ export default function ConnectionsPage() {
           )}
           <div className="flex flex-col gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-zinc-500">{selectedAppliances.length} appliance type(s) selected. Final allocation is calculated by the backend.</p>
-            <button type="submit" disabled={saving || loading || selectedAppliances.length === 0 || !sourceId} className="rounded-xl bg-amber-500 px-5 py-3 text-xs font-bold text-zinc-950 disabled:opacity-50">
-              {saving ? 'Submitting…' : 'Submit connection request'}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {editingConnectionId !== null && <button type="button" onClick={() => { setEditingConnectionId(null); setDrafts({}); setSourceId(''); setSourceName(''); }} className="rounded-xl border border-zinc-200 px-4 py-3 text-xs font-bold dark:border-zinc-700">Cancel edit</button>}
+              <button type="submit" disabled={saving || loading || selectedAppliances.length === 0 || !sourceId} className="rounded-xl bg-amber-500 px-5 py-3 text-xs font-bold text-zinc-950 disabled:opacity-50">
+                {saving ? 'Saving…' : editingConnectionId !== null ? 'Save appliance changes' : 'Submit connection request'}
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -314,6 +325,30 @@ export default function ConnectionsPage() {
                 <ul className="mt-3 space-y-1 text-xs text-zinc-500">
                   {connection.appliances.map((item) => <li key={item.applianceId}>{item.quantity} × {item.name} ({item.simultaneousQuantity} simultaneous, {item.ratedPowerW} W each)</li>)}
                 </ul>
+              )}
+              {connection.customerId === user?.id && ['PENDING', 'APPROVED', 'PENDING_REVISION'].includes(connection.status) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingConnectionId(connection.id);
+                    setSourceId(String(connection.sourceId));
+                    setSourceName(connection.sourceName);
+                    const next: Record<number, ApplianceDraft> = {};
+                    for (const item of connection.appliances || []) {
+                      next[item.applianceId] = {
+                        selected: true,
+                        quantity: item.quantity,
+                        simultaneousQuantity: item.simultaneousQuantity,
+                        ratedPowerOverrideW: String(item.ratedPowerW),
+                      };
+                    }
+                    setDrafts(next);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="mt-3 rounded-xl border border-zinc-200 px-3 py-2 text-xs font-bold dark:border-zinc-700"
+                >
+                  Edit appliance list
+                </button>
               )}
               {connection.status === 'APPROVED' && (
                 <div className="mt-3 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">

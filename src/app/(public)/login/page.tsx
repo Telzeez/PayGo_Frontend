@@ -44,7 +44,8 @@ function AuthPageContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [registrationToken, setRegistrationToken] = useState<string | null>(null);
   const [verificationPending, setVerificationPending] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');\n  const [canResendVerification, setCanResendVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [canResendVerification, setCanResendVerification] = useState(false);
 
   const { login, register, registerGoogle, loginWithGoogle, resendVerification } = useAuth();
   const router = useRouter();

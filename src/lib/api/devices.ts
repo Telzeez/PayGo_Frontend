@@ -9,7 +9,7 @@ export const devicesApi = {
     ),
 
   getDevices: async () => apiClient<{ success: boolean; devices: Array<{
-    deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE'; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
+    deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE'; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; meterPurpose: 'GENERATION' | 'RECEIVING';
     lastSeenAt: string | null; lastUpdated: string | null;
   }> }>('/api/owner/devices', { method: 'GET', requireAuth: true }),
 

@@ -41,7 +41,7 @@ export default function MeterSetupPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">\n      <Link href="/meters/claim" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-700 dark:text-amber-300">Have a registered PAYGO meter? Claim it here →</Link>
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">PAYGO meter activation</p>
         <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-white">Activate your assigned meter</h1>

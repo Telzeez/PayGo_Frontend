@@ -43,6 +43,11 @@ export default function BuyerMarketplacePage() {
   const requestLocation = () => {
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
       setLocationStatus('prompt');
+      setLocationGranted(false);
+      setLocationPendingConfirmation(false);
+      setLatitude(null);
+      setLongitude(null);
+      setListings([]);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLatitude(position.coords.latitude);
@@ -52,6 +57,11 @@ export default function BuyerMarketplacePage() {
           setError('');
         },
         (err) => {
+          setLatitude(null);
+          setLongitude(null);
+          setLocationGranted(false);
+          setLocationPendingConfirmation(false);
+          setListings([]);
           setLocationStatus('denied');
           setError(err.code === 1
             ? 'Location permission was denied. Enable location access in your browser settings and try again.'
@@ -82,21 +92,23 @@ export default function BuyerMarketplacePage() {
   };
 
   // Fetch Nearby Listings when coordinates or radius changes
+  const searchRequestId = React.useRef(0);
   const fetchNearby = async () => {
     if (latitude === null || longitude === null) return;
+    const requestId = ++searchRequestId.current;
     setLoading(true);
     setError('');
 
     try {
       const res = await marketplaceApi.getNearbyListings(latitude, longitude, radiusMeters);
-      if (res.success) {
+      if (requestId === searchRequestId.current && res.success) {
         setListings(res.listings);
       }
     } catch (err: any) {
       console.error('Error fetching nearby listings:', err);
-      setError(err.message || 'Failed to search nearby energy listings.');
+      if (requestId === searchRequestId.current) setError(err.message || 'Failed to search nearby energy listings.');
     } finally {
-      setLoading(false);
+      if (requestId === searchRequestId.current) setLoading(false);
     }
   };
 
@@ -104,7 +116,7 @@ export default function BuyerMarketplacePage() {
     if (locationGranted && latitude !== null && longitude !== null) {
       fetchNearby();
     }
-  }, [locationGranted, latitude, longitude, radiusMeters]);
+  }, [locationGranted, locationPendingConfirmation, latitude, longitude, radiusMeters]);
 
   useEffect(() => {
     let active = true;
@@ -115,7 +127,9 @@ export default function BuyerMarketplacePage() {
     }
     devicesApi.getDevices().then((response) => {
       if (!active) return;
-      const meters = response.devices || [];
+      const meters = (response.devices || []).filter((meter: any) =>
+        meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'RECEIVING'
+      );
       setOwnedMeters(meters);
       setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
         ? current
@@ -128,7 +142,7 @@ export default function BuyerMarketplacePage() {
 
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || !buyerDeviceId || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || !buyerDeviceId || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {

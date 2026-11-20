@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { devicesApi } from '@/lib/api/devices';
 import { useDevices } from '@/lib/contexts/DeviceContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function MeterSetupPage() {
   const [deviceId, setDeviceId] = useState('');
@@ -11,7 +12,13 @@ export default function MeterSetupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { devices, refreshDevices } = useDevices();
+  const { refreshDevices } = useDevices();
+  const [assignedMeters, setAssignedMeters] = useState<Array<{ deviceId: string; status: 'ONLINE' | 'OFFLINE'; assignmentStatus: string; meterPurpose: string }>>([]);
+  const { refreshUser } = useAuth();
+
+  useEffect(() => {
+    devicesApi.getDevices().then((response) => setAssignedMeters(response.devices || [])).catch(() => setAssignedMeters([]));
+  }, []);
 
   const handleActivate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,6 +30,9 @@ export default function MeterSetupPage() {
       setSuccess(response.message || 'PAYGO meter activated successfully.');
       setActivationCode('');
       await refreshDevices();
+      await refreshUser();
+      const updated = await devicesApi.getDevices();
+      setAssignedMeters(updated.devices || []);
     } catch (err: any) {
       setError(err.message || 'Unable to activate this meter. Check the details and try again.');
     } finally {
@@ -63,11 +73,11 @@ export default function MeterSetupPage() {
       <section className="rounded-3xl border border-zinc-200/70 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-[#121214]">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-bold text-zinc-900 dark:text-white">Meters assigned to your account</h2>
-          <span className="text-xs text-zinc-400">{devices.length} assigned</span>
+          <span className="text-xs text-zinc-400">{assignedMeters.length} assigned</span>
         </div>
-        {devices.length === 0 ? <p className="text-sm text-zinc-500">No meter has been assigned to this account yet. Contact PAYGO support if you expected one.</p> : (
+        {assignedMeters.length === 0 ? <p className="text-sm text-zinc-500">No meter has been assigned to this account yet. Contact PAYGO support if you expected one.</p> : (
           <ul className="space-y-2">
-            {devices.map((device) => (
+            {assignedMeters.map((device) => (
               <li key={device.deviceId} className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900">
                 <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">{device.deviceId}</span>
                 <span className={device.status === 'ONLINE' ? 'text-xs font-semibold text-emerald-600' : 'text-xs font-semibold text-zinc-400'}>{device.status}</span>

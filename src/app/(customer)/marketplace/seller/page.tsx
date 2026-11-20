@@ -29,22 +29,31 @@ export default function SellerMarketplacePage() {
     setLoading(true);
     setError('');
     try {
-      const [sourceRes, listingRes, meterRes] = await Promise.all([
+      const [sourceResult, listingResult] = await Promise.allSettled([
         marketplaceApi.getSellerSources(),
         marketplaceApi.getSellerListings(),
-        devicesApi.getDevices(),
       ]);
-      if (sourceRes.success) {
+      const sourceRes = sourceResult.status === 'fulfilled' ? sourceResult.value : null;
+      const listingRes = listingResult.status === 'fulfilled' ? listingResult.value : null;
+      if (sourceRes?.success) {
         setSources(sourceRes.sources);
         if (sourceRes.sources.length && !selectedSourceId) setSelectedSourceId(String(sourceRes.sources[0].id));
       }
-      if (listingRes.success) setListings(listingRes.listings);
+      if (listingRes?.success) setListings(listingRes.listings);
+      if (sourceResult.status === 'rejected' || listingResult.status === 'rejected') {
+        setError('Some seller information could not be loaded. You can still use the available sections.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Unable to load your seller setup.');
+    }
+    try {
+      const meterRes = await devicesApi.getDevices();
       const assigned = (meterRes.devices || []) as AssignedMeter[];
       setMeters(assigned);
       const activated = assigned.find((meter) => meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'GENERATION');
       if (activated && !deviceId) setDeviceId(activated.deviceId);
-    } catch (err: any) {
-      setError(err.message || 'Unable to load your seller setup.');
+    } catch {
+      setError('Unable to load your assigned meters. Your existing seller information is still available.');
     } finally {
       setLoading(false);
     }
@@ -54,6 +63,9 @@ export default function SellerMarketplacePage() {
 
   const requestInstallationLocation = () => {
     setError('');
+    setLocationConfirmed(false);
+    setLatitude(null);
+    setLongitude(null);
     if (!navigator.geolocation) {
       setError('This browser does not support location access. Please use a supported device/browser.');
       return;
@@ -64,9 +76,9 @@ export default function SellerMarketplacePage() {
         setLongitude(position.coords.longitude);
         setLocationConfirmed(false);
       },
-      (geoError) => setError(geoError.code === 1
+      (geoError) => { setLatitude(null); setLongitude(null); setLocationConfirmed(false); setError(geoError.code === 1
         ? 'Location permission was denied. Enable it in your browser settings and try again.'
-        : 'Unable to detect the installation location. Please try again.'),
+        : 'Unable to detect the installation location. Please try again.'); },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
@@ -118,7 +130,7 @@ export default function SellerMarketplacePage() {
     } catch (err: any) { setError(err.message || 'Unable to update this offer.'); }
   };
 
-  const activatedMeters = meters.filter((meter) => meter.assignmentStatus === 'ACTIVATED');
+  const activatedMeters = meters.filter((meter) => meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'GENERATION');
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">

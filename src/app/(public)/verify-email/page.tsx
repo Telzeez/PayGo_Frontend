@@ -8,7 +8,9 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { verifyEmail } = useAuth();\n  const verifyEmailRef = useRef(verifyEmail);\n  verifyEmailRef.current = verifyEmail;
+  const { verifyEmail } = useAuth();
+  const verifyEmailRef = useRef(verifyEmail);
+  verifyEmailRef.current = verifyEmail;
   const [message, setMessage] = useState('Verifying your email address…');
   const [failed, setFailed] = useState(false);
 

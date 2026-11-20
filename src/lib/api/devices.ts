@@ -33,7 +33,7 @@ export const devicesApi = {
     { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
   ),
 
-  getConsumption: async (deviceId: string, period: 'day' | 'week' | 'month') =>
+  getConsumption: async (deviceId: string, period: 'day' | 'week' | 'month' | 'year') =>
     apiClient<{ success: boolean; deviceId: string; period: string; readings: Array<{ date: string; kwhConsumed: number }> }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/consumption?period=${period}`,
       { method: 'GET', requireAuth: true }

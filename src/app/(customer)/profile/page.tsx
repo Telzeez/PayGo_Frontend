@@ -10,9 +10,9 @@ import { useDevices } from '@/lib/contexts/DeviceContext';
 export default function ProfilePage() {
   const { user, logout, updateProfile } = useAuth();
   const { selectedDeviceId, loadingDevices, refreshDevices } = useDevices();
-  const hasMeter = Boolean(selectedDeviceId && device);
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasMeter = Boolean(selectedDeviceId && device);
 
   // Edit Modal State
   const [isEditing, setIsEditing] = useState(false);

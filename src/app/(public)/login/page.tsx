@@ -290,7 +290,8 @@ function AuthPageContent() {
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   setError('');
-                  setIsSubmitting(true);
+                  // Keep GoogleLogin mounted while the token is exchanged.
+                  // Unmounting it here causes GIS to initialize again on retry.
                   try {
                     if (credentialResponse.credential) {
                       const res = await loginWithGoogle(credentialResponse.credential, role);

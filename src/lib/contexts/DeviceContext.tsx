@@ -9,6 +9,8 @@ export interface OwnerDevice {
   status: 'ONLINE' | 'OFFLINE';
   lastSeenAt: string | null;
   lastUpdated: string | null;
+  assignmentStatus?: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
+  meterPurpose?: 'GENERATION' | 'RECEIVING';
 }
 
 interface DeviceContextValue {
@@ -34,7 +36,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     try {
       setDeviceError('');
       const response = await apiClient<{ success: boolean; devices: OwnerDevice[] }>('/api/owner/devices');
-      const available = response.devices || [];
+      const available = (response.devices || []).filter((device) => device.assignmentStatus === 'ACTIVATED');
       setDevices(available);
       setSelectedDeviceId((current) => {
         const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;

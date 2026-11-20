@@ -49,6 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const handleMissingProfile = () => {
+      clearFirebaseSession();
+      clearPendingSignup();
+      setUser(null);
+    };
+    window.addEventListener('paygo:profile-missing', handleMissingProfile);
+    return () => window.removeEventListener('paygo:profile-missing', handleMissingProfile);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const initialize = async () => {
       try {
@@ -109,8 +119,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
     const pending = getPendingSignup(account.email);
-    await syncProfile(pending?.phone, pending?.role);
-    clearPendingSignup();
+    if (pending) {
+      await syncProfile(pending.phone, pending.role);
+      clearPendingSignup();
+      return;
+    }
+
+    try {
+      const result = await authApi.getMe();
+      setUser(result.user);
+    } catch (error: any) {
+      if (error?.status === 403 && error?.data?.code === 'PAYGO_PROFILE_NOT_LINKED') {
+        clearFirebaseSession();
+        throw new Error('Your PAYGO profile was not found. Your session has been cleared. Please create a new PAYGO account.');
+      }
+      throw error;
+    }
   };
 
   const loginWithGoogle = async (googleCredential: string, role?: string) => {
@@ -120,7 +144,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await sendFirebaseVerificationEmail(session.idToken);
       throw new Error('Please verify your Google account email before continuing.');
     }
-    await syncProfile(undefined, role);
+
+    const pending = getPendingSignup(account.email);
+    if (pending) {
+      await syncProfile(pending.phone, pending.role);
+      clearPendingSignup();
+      return;
+    }
+
+    try {
+      const result = await authApi.getMe();
+      setUser(result.user);
+    } catch (error: any) {
+      if (error?.status === 403 && error?.data?.code === 'PAYGO_PROFILE_NOT_LINKED') {
+        clearFirebaseSession();
+        throw new Error('Your PAYGO profile was not found. Your session has been cleared. Please create a new PAYGO account.');
+      }
+      throw error;
+    }
   };
 
   const registerGoogle = async (_params: { registrationToken: string; phone?: string; role: string }) => {

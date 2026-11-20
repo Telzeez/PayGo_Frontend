@@ -40,7 +40,7 @@ export default function OnboardingPage() {
           </button>
 
           <button
-            onClick={() => router.push('/marketplace/seller/setup')}
+            onClick={() => router.push('/marketplace/seller')}
             className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all text-left group"
           >
             <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">

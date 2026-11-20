@@ -98,7 +98,9 @@ function AuthPageContent() {
 
       setIsSubmitting(false);
       setIsSuccess(true);
-      const destination = isLogin ? redirect : '/onboarding';
+      const destination = isLogin
+        ? (redirect !== '/dashboard' ? '/onboarding?redirect=' + encodeURIComponent(redirect) : '/onboarding')
+        : '/onboarding';
       router.replace(destination);
     } catch (err: any) {
       if (isLogin && err?.code === 'EMAIL_NOT_FOUND') {

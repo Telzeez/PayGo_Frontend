@@ -194,7 +194,7 @@ export async function updateFirebaseCredentials(updates: { email?: string; passw
   return session;
 }
 
-export async function getFirebaseIdToken(): Promise<string | null> {
+export async function getFirebaseIdToken(forceRefresh = false): Promise<string | null> {
   if (typeof window === 'undefined') return null;
   const token = localStorage.getItem(ID_TOKEN_KEY);
   const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
@@ -202,7 +202,7 @@ export async function getFirebaseIdToken(): Promise<string | null> {
 
   try {
     const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    if (typeof payload.exp === 'number' && payload.exp * 1000 > Date.now() + 60_000) return token;
+    if (!forceRefresh && typeof payload.exp === 'number' && payload.exp * 1000 > Date.now() + 60_000) return token;
   } catch {
     // Refresh a malformed or unreadable token rather than sending it to the API.
   }

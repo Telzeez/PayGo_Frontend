@@ -274,9 +274,9 @@ export default function ConnectionsPage() {
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{source.name}</h3>
                 <p className="mt-1 text-xs text-zinc-500">Source #{source.id} · Generation meter {source.deviceId}</p>
                 <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-zinc-50 p-3 text-xs dark:bg-zinc-900 sm:grid-cols-3">
-                  <div><p className="text-zinc-500">Allocated W</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedW.toFixed(0)} / {source.maxCapacityW ? Number(source.maxCapacityW).toFixed(0) : '—'} W</p></div>
-                  <div><p className="text-zinc-500">Allocated VA</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedVa.toFixed(0)} / {source.maxCapacityVa ? Number(source.maxCapacityVa).toFixed(0) : '—'} VA</p></div>
-                  <div><p className="text-zinc-500">Allocated surge</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedSurgeVa.toFixed(0)} / {source.maxSurgeVa ? Number(source.maxSurgeVa).toFixed(0) : '—'} VA</p></div>
+                  <div><p className="text-zinc-500">Allocated W</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedW.toFixed(0)} / {source.maxCapacityW ? Number(source.maxCapacityW).toFixed(0) : '—'} W</p><p className="mt-1 text-[10px] text-emerald-600">Available: {source.maxCapacityW ? Math.max(0, Number(source.maxCapacityW) - allocatedW).toFixed(0) + ' W' : '—'}</p></div>
+                  <div><p className="text-zinc-500">Allocated VA</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedVa.toFixed(0)} / {source.maxCapacityVa ? Number(source.maxCapacityVa).toFixed(0) : '—'} VA</p><p className="mt-1 text-[10px] text-emerald-600">Available: {source.maxCapacityVa ? Math.max(0, Number(source.maxCapacityVa) - allocatedVa).toFixed(0) + ' VA' : '—'}</p></div>
+                  <div><p className="text-zinc-500">Allocated surge</p><p className="mt-1 font-bold text-zinc-900 dark:text-white">{allocatedSurgeVa.toFixed(0)} / {source.maxSurgeVa ? Number(source.maxSurgeVa).toFixed(0) : '—'} VA</p><p className="mt-1 text-[10px] text-emerald-600">Available: {source.maxSurgeVa ? Math.max(0, Number(source.maxSurgeVa) - allocatedSurgeVa).toFixed(0) + ' VA' : '—'}</p></div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {([

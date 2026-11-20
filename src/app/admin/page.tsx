@@ -51,6 +51,10 @@ export default function AdminDashboardPage() {
         Number(provisionOwnerId),
         meterPurpose
       );
+      if (!response.activationEmailSent) {
+        setProvisionError(response.message || 'The meter was assigned, but the activation email was not sent. Verify email configuration and arrange a secure code resend before asking the user to activate.');
+        return;
+      }
       setProvisionMessage(response.message || 'Meter provisioned and activation email sent.');
       setProvisionDeviceId('');
       setProvisionOwnerId('');
@@ -146,15 +150,15 @@ export default function AdminDashboardPage() {
         <form onSubmit={handleProvisionMeter} className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="provision-device" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Registered meter ID</label>
-            <input id="provision-device" value={provisionDeviceId} onChange={(event) => setProvisionDeviceId(event.target.value)} required minLength={3} maxLength={50} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,49}" placeholder="e.g. PAYGO-001" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm font-mono dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <input id="provision-device" value={provisionDeviceId} onChange={(event) => setProvisionDeviceId(event.target.value)} disabled={provisioning} required minLength={3} maxLength={50} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,49}" placeholder="e.g. PAYGO-001" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm font-mono dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
           </div>
           <div>
             <label htmlFor="provision-owner" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Owner account user ID</label>
-            <input id="provision-owner" type="number" min="1" step="1" value={provisionOwnerId} onChange={(event) => setProvisionOwnerId(event.target.value)} required placeholder="User ID" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <input id="provision-owner" type="number" min="1" step="1" value={provisionOwnerId} onChange={(event) => setProvisionOwnerId(event.target.value)} disabled={provisioning} required placeholder="User ID" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
           </div>
           <div>
             <label htmlFor="meter-purpose" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Meter purpose</label>
-            <select id="meter-purpose" value={meterPurpose} onChange={(event) => setMeterPurpose(event.target.value as 'GENERATION' | 'RECEIVING')} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+            <select id="meter-purpose" value={meterPurpose} onChange={(event) => setMeterPurpose(event.target.value as 'GENERATION' | 'RECEIVING')} disabled={provisioning} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
               <option value="GENERATION">Seller generation meter</option>
               <option value="RECEIVING">Buyer receiving meter</option>
             </select>

@@ -30,7 +30,7 @@ export default function RegisterPage() {
     try {
       const result = await register({ email, password, phone, role: 'BUYER' });
       if (result.requiresEmailVerification) {
-        router.push(`/login?registered=1&email=${encodeURIComponent(email)}`);
+        router.push('/login?registered=1');
       } else {
         router.push('/onboarding');
       }

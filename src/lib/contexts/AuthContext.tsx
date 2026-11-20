@@ -14,6 +14,7 @@ interface AuthContextType {
   register: (params: RegisterParams) => Promise<{ requiresEmailVerification?: boolean; email?: string }>;
   verifyEmail: (token: string) => Promise<string | undefined>;
   resendVerification: (email: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
 }
@@ -102,6 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.resendVerification(email);
   };
 
+  const refreshUser = async () => {
+    const res = await authApi.getMe();
+    if (res.success && res.user) setUser(res.user);
+  };
+
   const updateProfile = async (data: { email?: string; phone?: string; newPassword?: string }) => {
     const res = await authApi.updateProfile(data);
     if (res.success && res.user) {
@@ -126,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerGoogle,
     verifyEmail,
     resendVerification,
+    refreshUser,
     updateProfile,
     logout,
   };

@@ -120,9 +120,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return profile.role;
   };
 
-  const resendVerification = async (_email: string) => {
+  const resendVerification = async (email: string) => {
     const idToken = await getFirebaseIdToken();
     if (!idToken) throw new Error('Please sign in with your email and password first, then request another verification email.');
+    const account = await getFirebaseAccount(idToken);
+    if (account.email.toLowerCase() !== email.trim().toLowerCase()) {
+      throw new Error('The signed-in email does not match the address shown. Sign in with the correct account before resending verification.');
+    }
+    if (account.emailVerified) throw new Error('This email address is already verified. Please sign in.');
     await sendFirebaseVerificationEmail(idToken);
   };
 

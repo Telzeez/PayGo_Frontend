@@ -114,6 +114,10 @@ export function getPendingSignup(email: string) {
   };
 }
 
+export function hasPendingSignup() {
+  return typeof window !== 'undefined' && Boolean(localStorage.getItem(PENDING_EMAIL_KEY));
+}
+
 export function clearPendingSignup() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(PENDING_EMAIL_KEY);

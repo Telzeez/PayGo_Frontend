@@ -286,7 +286,7 @@ export default function ConnectionsPage() {
                     ['safetyMarginPct', 'Safety margin (%)'],
                   ] as const).map(([key, label]) => (
                     <label key={key} className="text-[11px] text-zinc-500">{label}
-                      <input type="number" min="0" step="0.1" value={draft[key]} onChange={(event) => setCapacityDrafts((current) => ({ ...current, [source.id]: { ...draft, [key]: event.target.value } }))} className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+                      <input type="number" min={key === 'safetyMarginPct' ? 0 : 1} max={key === 'safetyMarginPct' ? 100 : undefined} step="0.1" required value={draft[key]} onChange={(event) => setCapacityDrafts((current) => ({ ...current, [source.id]: { ...draft, [key]: event.target.value } }))} className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                     </label>
                   ))}
                 </div>

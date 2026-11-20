@@ -9,6 +9,8 @@ import {
   getFirebaseAccount,
   getFirebaseIdToken,
   getPendingAccountRole,
+  getPendingPhone,
+  setPendingPhone,
   sendFirebasePasswordReset,
   sendFirebaseVerificationEmail,
   signInFirebase,
@@ -96,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (params: { email: string; password: string; phone?: string; role: string }) => {
     setPendingAccountRole(params.role);
+    setPendingPhone(params.phone);
     const session = await createFirebaseAccount(params.email, params.password);
     await sendFirebaseVerificationEmail(session.idToken);
     return { requiresEmailVerification: true, email: params.email.trim().toLowerCase() };
@@ -105,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const session = await verifyFirebaseEmailCode(oobCode);
     const account = await getFirebaseAccount(session.idToken);
     if (!account.emailVerified) throw new Error('Firebase has not confirmed this email address yet.');
-    const profile = await syncProfile(undefined, getPendingAccountRole());
+    const profile = await syncProfile(getPendingPhone(), getPendingAccountRole());
     return profile.role;
   };
 

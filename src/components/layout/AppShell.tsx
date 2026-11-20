@@ -56,7 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
     { label: 'EDH', path: '/marketplace', icon: MarketIcon },
-    ...(user?.role === 'OWNER' ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
+    ...(user?.isSeller ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },
@@ -103,7 +103,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
             </select>
           )}
-          {user?.role === 'OWNER' && (
+          {user?.isSeller && (
             <Link
               href="/marketplace/seller"
               className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -163,7 +163,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
         <ul className="flex justify-around items-center px-1 py-2 max-w-lg mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.role === 'OWNER')).map((item) => {
+          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.isSeller)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (

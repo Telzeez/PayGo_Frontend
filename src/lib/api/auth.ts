@@ -10,6 +10,14 @@ export const authApi = {
     });
   },
 
+  activateCapability: async (capability: 'BUYER' | 'SELLER') => {
+    return apiClient<{ success: boolean; user: UserProfile }>('/api/auth/capabilities', {
+      method: 'POST',
+      body: JSON.stringify({ capability }),
+      requireAuth: true,
+    });
+  },
+
   getMe: async () => {
     return apiClient<{ success: boolean; user: UserProfile }>('/api/auth/me', {
       method: 'GET',

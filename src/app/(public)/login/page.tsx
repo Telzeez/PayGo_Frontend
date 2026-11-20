@@ -45,11 +45,35 @@ function AuthPageContent() {
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [canResendVerification, setCanResendVerification] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendFeedback, setResendFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showGoogleNotice, setShowGoogleNotice] = useState(false);
   const [registrationNotice] = useState(searchParams.get('registered') === '1');
 
   const { login, register, registerGoogle, resendVerification } = useAuth();
   const router = useRouter();
+
+  const handleResendVerification = async () => {
+    const targetEmail = verificationPending ? verificationEmail : email;
+    if (!targetEmail.trim() || isResending) return;
+
+    setIsResending(true);
+    setResendFeedback(null);
+    try {
+      await resendVerification(targetEmail.trim());
+      setResendFeedback({
+        type: 'success',
+        message: 'Verification link requested. Check your inbox and spam folder.',
+      });
+    } catch (err: any) {
+      setResendFeedback({
+        type: 'error',
+        message: err?.message || 'Could not resend the verification email. Please try again.',
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +103,8 @@ function AuthPageContent() {
       setError(err.message || 'Authentication failed. Please check your details.');
       if (isLogin && err?.status === 403 && err?.data?.code === 'EMAIL_NOT_VERIFIED') {
         setCanResendVerification(true);
+        setVerificationEmail(email);
+        setResendFeedback(null);
       }
       setIsSubmitting(false);
     }
@@ -94,8 +120,23 @@ function AuthPageContent() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 text-2xl">✉</div>
           <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Check your inbox</h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">We sent a verification link to <strong className="break-all text-zinc-800 dark:text-zinc-200">{verificationEmail}</strong>. Verify your email before signing in.</p>
-          <button type="button" onClick={async () => { try { await resendVerification(verificationEmail); setError('A new verification link has been sent if the account still needs verification.'); } catch (err: any) { setError(err.message || 'Could not resend the verification email.'); } }} className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm font-semibold">Resend verification email</button>
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={isResending}
+            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm font-semibold transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isResending ? 'Sending verification link…' : 'Resend verification email'}
+          </button>
+          {resendFeedback && (
+            <p role="status" aria-live="polite" className={`rounded-lg px-3 py-2 text-sm ${
+              resendFeedback.type === 'success'
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'
+            }`}>
+              {resendFeedback.message}
+            </p>
+          )}
           <button type="button" onClick={() => { setVerificationPending(false); setIsLogin(true); setError(''); }} className="text-sm font-semibold text-amber-600">Back to sign in</button>
         </div>
       ) : isSubmitting ? (
@@ -156,7 +197,29 @@ function AuthPageContent() {
             </div>
           )}
           {canResendVerification && (
-            <button type="button" onClick={async () => { try { await resendVerification(email); setError('A fresh verification link has been requested. Check your inbox.'); setCanResendVerification(false); } catch (err: any) { setError(err.message || 'Could not resend the verification email.'); } }} className="mb-4 text-sm font-semibold text-amber-600 hover:text-amber-500">Resend verification email</button>
+            <div className="mb-4 space-y-2">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="text-sm font-semibold text-amber-600 transition-colors hover:text-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isResending ? 'Sending verification link…' : 'Resend verification email'}
+              </button>
+              {resendFeedback && (
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className={`rounded-lg px-3 py-2 text-sm ${
+                    resendFeedback.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                      : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'
+                  }`}
+                >
+                  {resendFeedback.message}
+                </p>
+              )}
+            </div>
           )}
 
           {registrationToken && (

@@ -2,10 +2,10 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
-  provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING') =>
+  provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING', connectionId?: number) =>
     apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; expiresInHours: number; message: string }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/provision`,
-      { method: 'POST', requireAuth: true, body: JSON.stringify({ ownerId, purpose }) }
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ ownerId, purpose, ...(connectionId ? { connectionId } : {}) }) }
     ),
 
   activateAssignedMeter: async (deviceId: string, activationCode: string) =>

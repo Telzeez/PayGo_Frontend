@@ -17,7 +17,6 @@ import {
   signInFirebaseWithGoogle,
   updateFirebaseCredentials,
   verifyFirebaseEmailCode,
-  setPendingAccountRole,
 } from '../firebase/auth';
 
 interface AuthContextType {
@@ -56,8 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!idToken) return;
         const account = await getFirebaseAccount(idToken);
         if (!account.emailVerified) return;
-        const result = await authApi.getMe().catch(async () => authApi.syncFirebaseProfile({}));
-        if (active && result.success) setUser(result.user);
+        const pending = getPendingSignup(account.email);
+        const result = await authApi.getMe().catch(async () =>
+          authApi.syncFirebaseProfile({ phone: pending?.phone, role: pending?.role })
+        );
+        if (active && result.success) {
+          setUser(result.user);
+          clearPendingSignup();
+        }
       } catch (error) {
         console.error('Failed to restore Firebase session:', error);
         if (active) setUser(null);

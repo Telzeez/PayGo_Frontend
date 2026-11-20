@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
   const isOnline = deviceData?.status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto w-full min-w-0 p-3 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5">
         <div>
@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
               OWNER / ADMIN DASHBOARD
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mt-1">
             Platform Hardware & Meter Control
           </h1>
         </div>
@@ -73,9 +73,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1 */}
-        <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm space-y-1">
+        <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm space-y-1">
           <p className="text-xs text-zinc-500 font-medium">Total Registered Meters</p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-white">1</p>
           <p className="text-[11px] text-zinc-400">Active Compound Solar Systems</p>
@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Devices Overview Table */}
-      <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">Active Meter Registry</h2>
           <span className="text-xs text-zinc-400">Updated Real-Time</span>
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
           <div className="h-32 bg-zinc-100 dark:bg-zinc-900 rounded-2xl animate-pulse"></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[680px] text-left text-xs">
               <thead>
                 <tr className="border-b border-zinc-100 dark:border-zinc-800/80 text-zinc-400 uppercase tracking-wider font-semibold">
                   <th className="pb-3 px-3">Device ID</th>

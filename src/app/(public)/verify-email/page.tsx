@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { verifyEmail } = useAuth();
+  const { verifyEmail } = useAuth();\n  const verifyEmailRef = useRef(verifyEmail);\n  verifyEmailRef.current = verifyEmail;
   const [message, setMessage] = useState('Verifying your email address…');
   const [failed, setFailed] = useState(false);
 
@@ -21,7 +21,7 @@ function VerifyEmailContent() {
     }
 
     let active = true;
-    verifyEmail(token)
+    verifyEmailRef.current(token)
       .then((role) => {
         if (!active) return;
         setMessage('Your email is verified. Taking you to PAYGO…');
@@ -34,7 +34,7 @@ function VerifyEmailContent() {
       });
 
     return () => { active = false; };
-  }, [searchParams, verifyEmail, router]);
+  }, [searchParams, router]);
 
   return (
     <main className="min-h-[60vh] flex items-center justify-center px-4 py-12">

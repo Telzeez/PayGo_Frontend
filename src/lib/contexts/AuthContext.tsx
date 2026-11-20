@@ -2,18 +2,33 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile } from '../types';
-import { authApi, LoginParams, RegisterParams } from '../api/auth';
+import { authApi } from '../api/auth';
+import {
+  clearFirebaseSession,
+  createFirebaseAccount,
+  getFirebaseAccount,
+  getFirebaseIdToken,
+  getPendingAccountRole,
+  sendFirebasePasswordReset,
+  sendFirebaseVerificationEmail,
+  signInFirebase,
+  signInFirebaseWithGoogle,
+  updateFirebaseCredentials,
+  verifyFirebaseEmailCode,
+  setPendingAccountRole,
+} from '../firebase/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (params: LoginParams) => Promise<void>;
-  loginWithGoogle: (token: string, role?: string) => Promise<{needsRegistration?: boolean, registrationToken?: string} | void>;
+  login: (params: { email: string; password: string }) => Promise<void>;
+  loginWithGoogle: (token: string, role?: string) => Promise<{ needsRegistration?: boolean; registrationToken?: string } | void>;
   registerGoogle: (params: { registrationToken: string; phone?: string; role: string }) => Promise<void>;
-  register: (params: RegisterParams) => Promise<{ requiresEmailVerification?: boolean; email?: string }>;
-  verifyEmail: (token: string) => Promise<string | undefined>;
+  register: (params: { email: string; password: string; phone?: string; role: string }) => Promise<{ requiresEmailVerification?: boolean; email?: string }>;
+  verifyEmail: (oobCode: string) => Promise<string | undefined>;
   resendVerification: (email: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
@@ -25,104 +40,126 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize session on mount
-  useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('paygo_token');
-      if (token) {
-        try {
-          const res = await authApi.getMe();
-          if (res.success && res.user) {
-            setUser(res.user);
-          } else {
-            localStorage.removeItem('paygo_token');
-          }
-        } catch (error) {
-          console.error("Failed to restore session:", error);
-          localStorage.removeItem('paygo_token');
-        }
-      }
-      setIsLoading(false);
-    };
+  const syncProfile = async (phone?: string, role?: string) => {
+    const result = await authApi.syncFirebaseProfile({ phone, role });
+    setUser(result.user);
+    return result.user;
+  };
 
-    initAuth();
+  useEffect(() => {
+    let active = true;
+    const initialize = async () => {
+      try {
+        const idToken = await getFirebaseIdToken();
+        if (!idToken) return;
+        const account = await getFirebaseAccount(idToken);
+        if (!account.emailVerified) return;
+        const result = await authApi.getMe().catch(async () => authApi.syncFirebaseProfile({}));
+        if (active && result.success) setUser(result.user);
+      } catch (error) {
+        console.error('Failed to restore Firebase session:', error);
+        if (active) setUser(null);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    initialize();
+    return () => { active = false; };
   }, []);
 
-  const login = async (params: LoginParams) => {
-    const res = await authApi.login(params);
-    if (res.success && res.token && res.user) {
-      localStorage.setItem('paygo_token', res.token);
-      setUser(res.user);
+  const login = async ({ email, password }: { email: string; password: string }) => {
+    const session = await signInFirebase(email, password);
+    const account = await getFirebaseAccount(session.idToken);
+    if (!account.emailVerified) {
+      await sendFirebaseVerificationEmail(session.idToken);
+      const error: any = new Error('Your account is not verified yet. We have sent you a new verification email.');
+      error.status = 403;
+      error.data = { code: 'EMAIL_NOT_VERIFIED' };
+      throw error;
     }
+    await syncProfile();
   };
 
-  const loginWithGoogle = async (token: string, role?: string): Promise<{needsRegistration?: boolean, registrationToken?: string} | void> => {
-    const res = await authApi.loginWithGoogle({ token, role });
-    if (res.success) {
-      if (res.needsRegistration) {
-        return { needsRegistration: true, registrationToken: res.registrationToken };
-      }
-      if (res.token && res.user) {
-        localStorage.setItem('paygo_token', res.token);
-        setUser(res.user);
-      }
+  const loginWithGoogle = async (googleCredential: string, role?: string) => {
+    const session = await signInFirebaseWithGoogle(googleCredential);
+    const account = await getFirebaseAccount(session.idToken);
+    if (!account.emailVerified) {
+      await sendFirebaseVerificationEmail(session.idToken);
+      throw new Error('Please verify your Google account email before continuing.');
     }
+    await syncProfile(undefined, role);
   };
 
-  const registerGoogle = async (params: { registrationToken: string; phone?: string; role: string }) => {
-    const res = await authApi.registerGoogle(params);
-    if (res.success && res.token && res.user) {
-      localStorage.setItem('paygo_token', res.token);
-      setUser(res.user);
-    }
+  const registerGoogle = async (_params: { registrationToken: string; phone?: string; role: string }) => {
+    throw new Error('Google account registration is now completed through Firebase. Please use Continue with Google again.');
   };
 
-  const register = async (params: RegisterParams) => {
-    const res = await authApi.register(params);
-    if (res.success && res.requiresEmailVerification) {
-      return { requiresEmailVerification: true, email: res.email };
-    }
-    if (res.success && res.token && res.user) {
-      localStorage.setItem('paygo_token', res.token);
-      setUser(res.user);
-    }
-    return {};
+  const register = async (params: { email: string; password: string; phone?: string; role: string }) => {
+    setPendingAccountRole(params.role);
+    const session = await createFirebaseAccount(params.email, params.password);
+    await sendFirebaseVerificationEmail(session.idToken);
+    return { requiresEmailVerification: true, email: params.email.trim().toLowerCase() };
   };
 
-  const verifyEmail = async (token: string): Promise<string | undefined> => {
-    const res = await authApi.verifyEmail(token);
-    if (res.success && res.token && res.user) {
-      localStorage.setItem('paygo_token', res.token);
-      setUser(res.user);
-      return res.user.role;
-    }
-    return undefined;
+  const verifyEmail = async (oobCode: string): Promise<string | undefined> => {
+    const session = await verifyFirebaseEmailCode(oobCode);
+    const account = await getFirebaseAccount(session.idToken);
+    if (!account.emailVerified) throw new Error('Firebase has not confirmed this email address yet.');
+    const profile = await syncProfile(undefined, getPendingAccountRole());
+    return profile.role;
   };
 
-  const resendVerification = async (email: string) => {
-    await authApi.resendVerification(email);
+  const resendVerification = async (_email: string) => {
+    const idToken = await getFirebaseIdToken();
+    if (!idToken) throw new Error('Please sign in with your email and password first, then request another verification email.');
+    await sendFirebaseVerificationEmail(idToken);
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendFirebasePasswordReset(email);
   };
 
   const refreshUser = async () => {
-    const res = await authApi.getMe();
-    if (res.success && res.user) setUser(res.user);
+    const idToken = await getFirebaseIdToken();
+    if (!idToken) {
+      setUser(null);
+      return;
+    }
+    const account = await getFirebaseAccount(idToken);
+    if (!account.emailVerified) {
+      setUser(null);
+      return;
+    }
+    const result = await authApi.syncFirebaseProfile({});
+    setUser(result.user);
   };
 
   const updateProfile = async (data: { email?: string; phone?: string; newPassword?: string }) => {
-    const res = await authApi.updateProfile(data);
-    if (res.success && res.user) {
-      setUser(res.user);
+    if (data.phone !== undefined) {
+      const result = await authApi.updateProfile({ phone: data.phone });
+      setUser(result.user);
+    }
+
+    if (data.email || data.newPassword) {
+      const session = await updateFirebaseCredentials({
+        email: data.email,
+        password: data.newPassword,
+      });
+      if (data.email) {
+        await sendFirebaseVerificationEmail(session.idToken);
+        setUser(null);
+        throw new Error('A verification email has been sent to your new address. Verify it before continuing to use PAYGO.');
+      }
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('paygo_token');
+    clearFirebaseSession();
     setUser(null);
-    authApi.logout().catch(console.error);
     window.location.href = '/login';
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
@@ -132,22 +169,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerGoogle,
     verifyEmail,
     resendVerification,
+    sendPasswordReset,
     refreshUser,
     updateProfile,
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

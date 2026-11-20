@@ -5,6 +5,7 @@ const TOKEN_URL = 'https://securetoken.googleapis.com/v1/token';
 const ID_TOKEN_KEY = 'paygo_firebase_id_token';
 const REFRESH_TOKEN_KEY = 'paygo_firebase_refresh_token';
 const ROLE_KEY = 'paygo_pending_role';
+const PENDING_EMAIL_KEY = 'paygo_pending_email';
 
 export interface FirebaseSession {
   idToken: string;
@@ -65,6 +66,8 @@ export function clearFirebaseSession() {
   localStorage.removeItem(ID_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem(PENDING_EMAIL_KEY);
+  localStorage.removeItem('paygo_pending_phone');
   localStorage.removeItem('paygo_token');
 }
 
@@ -86,6 +89,30 @@ export function setPendingPhone(phone?: string) {
 export function getPendingPhone() {
   if (typeof window === 'undefined') return undefined;
   return localStorage.getItem('paygo_pending_phone') || undefined;
+}
+
+export function setPendingSignup(email: string, phone: string | undefined, role: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PENDING_EMAIL_KEY, email.trim().toLowerCase());
+  setPendingPhone(phone);
+  setPendingAccountRole(role);
+}
+
+export function getPendingSignup(email: string) {
+  if (typeof window === 'undefined') return undefined;
+  const pendingEmail = localStorage.getItem(PENDING_EMAIL_KEY);
+  if (!pendingEmail || pendingEmail !== email.trim().toLowerCase()) return undefined;
+  return {
+    phone: getPendingPhone(),
+    role: getPendingAccountRole(),
+  };
+}
+
+export function clearPendingSignup() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(PENDING_EMAIL_KEY);
+  localStorage.removeItem('paygo_pending_phone');
+  localStorage.removeItem(ROLE_KEY);
 }
 
 export async function createFirebaseAccount(email: string, password: string): Promise<FirebaseSession> {

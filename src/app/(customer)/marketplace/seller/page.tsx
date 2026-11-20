@@ -2,377 +2,211 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/contexts/AuthContext';
+import { devicesApi } from '@/lib/api/devices';
 import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
 
-export default function SellerMarketplacePage() {
-  const { user } = useAuth();
+type AssignedMeter = { deviceId: string; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; status: 'ONLINE' | 'OFFLINE' };
 
+export default function SellerMarketplacePage() {
   const [sources, setSources] = useState<SellerSource[]>([]);
   const [listings, setListings] = useState<SellerListing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // New Source Form
-  const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
+  const [meters, setMeters] = useState<AssignedMeter[]>([]);
   const [deviceId, setDeviceId] = useState('');
-  const [sourceLat, setSourceLat] = useState('7.4400');
-  const [sourceLon, setSourceLon] = useState('3.9000');
+  const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [serviceRadius, setServiceRadius] = useState('500');
-  const [creatingSource, setCreatingSource] = useState(false);
-
-  // New Listing Form
-  const [selectedSourceId, setSelectedSourceId] = useState<string>('');
   const [availableKwh, setAvailableKwh] = useState('10');
   const [pricePerKwh, setPricePerKwh] = useState('250');
-  const [creatingListing, setCreatingListing] = useState(false);
+  const [selectedSourceId, setSelectedSourceId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
     setError('');
     try {
-      const [sourcesRes, listingsRes] = await Promise.all([
+      const [sourceRes, listingRes, meterRes] = await Promise.all([
         marketplaceApi.getSellerSources(),
         marketplaceApi.getSellerListings(),
+        devicesApi.getDevices(),
       ]);
-
-      if (sourcesRes.success) {
-        setSources(sourcesRes.sources);
-        if (sourcesRes.sources.length > 0 && !selectedSourceId) {
-          setSelectedSourceId(sourcesRes.sources[0].id.toString());
-        }
+      if (sourceRes.success) {
+        setSources(sourceRes.sources);
+        if (sourceRes.sources.length && !selectedSourceId) setSelectedSourceId(String(sourceRes.sources[0].id));
       }
-
-      if (listingsRes.success) {
-        setListings(listingsRes.listings);
-      }
+      if (listingRes.success) setListings(listingRes.listings);
+      const assigned = (meterRes.devices || []) as AssignedMeter[];
+      setMeters(assigned);
+      const activated = assigned.find((meter) => meter.assignmentStatus === 'ACTIVATED');
+      if (activated && !deviceId) setDeviceId(activated.deviceId);
     } catch (err: any) {
-      console.error('Error fetching seller marketplace data:', err);
-      setError(err.message || 'Failed to load seller information.');
+      setError(err.message || 'Unable to load your seller setup.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleCreateSource = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestInstallationLocation = () => {
     setError('');
-    setSuccess('');
-    setCreatingSource(true);
-
-    try {
-      const res = await marketplaceApi.createSource({
-        deviceId,
-        name: deviceName,
-        latitude: parseFloat(sourceLat),
-        longitude: parseFloat(sourceLon),
-        serviceRadiusMeters: parseInt(serviceRadius, 10),
-      });
-
-      if (res.success) {
-        setSuccess(`Energy Source "${res.source.name}" registered successfully!`);
-        fetchData();
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to register energy source.');
-    } finally {
-      setCreatingSource(false);
-    }
-  };
-
-  const handleCreateListing = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSourceId) {
-      setError('Please select an energy source first.');
+    if (!navigator.geolocation) {
+      setError('This browser does not support location access. Please use a supported device/browser.');
       return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setLocationConfirmed(false);
+      },
+      (geoError) => setError(geoError.code === geoError.PERMISSION_DENIED
+        ? 'Location permission was denied. Enable it in your browser settings and try again.'
+        : 'Unable to detect the installation location. Please try again.'),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
 
-    setError('');
-    setSuccess('');
-    setCreatingListing(true);
-
+  const handleCreateSource = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!deviceId || !locationConfirmed || latitude === null || longitude === null) {
+      setError('Activate your assigned meter and confirm the installation location first.');
+      return;
+    }
+    setSaving(true); setError(''); setSuccess('');
     try {
-      const res = await marketplaceApi.createListing({
-        energySourceId: parseInt(selectedSourceId, 10),
-        availableKwh: parseFloat(availableKwh),
-        pricePerKwh: parseFloat(pricePerKwh),
+      const response = await marketplaceApi.createSource({
+        deviceId, name: deviceName, latitude, longitude,
+        serviceRadiusMeters: parseInt(serviceRadius, 10),
       });
-
-      if (res.success) {
-        setSuccess('Energy listing published to nearby buyers!');
-        fetchData();
+      if (response.success) {
+        setSuccess('Energy source registered. You can now publish an offer.');
+        await fetchData();
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to publish listing.');
-    } finally {
-      setCreatingListing(false);
-    }
+      setError(err.message || 'Unable to register this energy source.');
+    } finally { setSaving(false); }
   };
 
-  const handleToggleListing = async (listingId: number, currentStatus: string) => {
-    const action = currentStatus === 'ACTIVE' ? 'pause' : 'activate';
+  const handleCreateListing = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedSourceId) return setError('Register an energy source first.');
+    setSaving(true); setError(''); setSuccess('');
     try {
-      await marketplaceApi.toggleListingStatus(listingId, action);
-      fetchData();
+      const response = await marketplaceApi.createListing({
+        energySourceId: Number(selectedSourceId),
+        availableKwh: Number(availableKwh),
+        pricePerKwh: Number(pricePerKwh),
+      });
+      if (response.success) {
+        setSuccess('Your energy offer has been published.');
+        await fetchData();
+      }
     } catch (err: any) {
-      setError(err.message || `Failed to ${action} listing.`);
-    }
+      setError(err.message || 'Unable to publish your offer.');
+    } finally { setSaving(false); }
   };
+
+  const handleToggleListing = async (listingId: number, status: string) => {
+    try {
+      await marketplaceApi.toggleListingStatus(listingId, status === 'ACTIVE' ? 'pause' : 'activate');
+      await fetchData();
+    } catch (err: any) { setError(err.message || 'Unable to update this offer.'); }
+  };
+
+  const activatedMeters = meters.filter((meter) => meter.assignmentStatus === 'ACTIVATED');
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-4xl min-w-0 mx-auto w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link href="/marketplace" className="w-9 h-9 rounded-full bg-white dark:bg-[#121214] flex items-center justify-center border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-          </Link>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Sell your surplus energy</h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Complete your installation details and publish an offer for nearby buyers.</p>
+        </div>
+        <Link href="/marketplace" className="rounded-xl bg-amber-500 px-4 py-2.5 text-center text-xs font-bold text-zinc-950">Find energy as a buyer</Link>
+      </div>
+
+      {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">{error}</div>}
+      {success && <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">{success}</div>}
+
+      <section className="rounded-3xl border border-zinc-200/70 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214] sm:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-bold text-zinc-900 dark:text-white">1. Your PAYGO meter</h2>
+          <Link href="/meters" className="text-xs font-bold text-amber-600 hover:underline">Activate a meter</Link>
+        </div>
+        {activatedMeters.length ? (
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Seller Portal — My Energy</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Connect your PAYGO meter, register your solar source, and list surplus energy for nearby buyers.
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/marketplace"
-          className="px-4 py-2 rounded-xl bg-amber-500 text-zinc-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-sm flex items-center gap-2 self-start sm:self-auto"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          Find Energy (Buyer Mode)
-        </Link>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-4 rounded-2xl text-xs font-semibold text-red-800 dark:text-red-400">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-4 rounded-2xl text-xs font-semibold text-emerald-800 dark:text-emerald-400">
-          {success}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Step 1: Connect Meter & Register Energy Source */}
-        <section className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-            <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs">1</span>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Connect Meter & Register Energy Source</h2>
-          </div>
-
-          <form onSubmit={handleCreateSource} className="space-y-3.5 text-xs">
-            <div>
-              <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Source Name</label>
-              <input
-                type="text"
-                value={deviceName}
-                onChange={(e) => setDeviceName(e.target.value)}
-                required
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white"
-                placeholder="e.g. Home Rooftop Solar"
-              />
-            </div>
-
-            <div>
-              <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">PAYGO Meter Device ID</label>
-              <input
-                type="text"
-                value={deviceId}
-                onChange={(e) => setDeviceId(e.target.value)}
-                required
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white"
-                placeholder="e.g. PAYGO-001"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Latitude</label>
-                <input
-                  type="text"
-                  value={sourceLat}
-                  onChange={(e) => setSourceLat(e.target.value)}
-                  required
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 text-zinc-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Longitude</label>
-                <input
-                  type="text"
-                  value={sourceLon}
-                  onChange={(e) => setSourceLon(e.target.value)}
-                  required
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 text-zinc-900 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Service Radius (Meters)</label>
-              <input
-                type="number"
-                value={serviceRadius}
-                onChange={(e) => setServiceRadius(e.target.value)}
-                required
-                min="50"
-                max="5000"
-                className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white"
-                placeholder="500"
-              />
-              <p className="text-[11px] text-zinc-400 mt-1">Maximum geographical distance buyers can be matched from your system.</p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={creatingSource}
-              className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
-            >
-              {creatingSource ? 'Registering Source...' : 'Register Energy Source'}
-            </button>
-          </form>
-        </section>
-
-        {/* Step 2: Publish Energy Listing */}
-        <section className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-            <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs">2</span>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Publish Energy Listing</h2>
-          </div>
-
-          {sources.length === 0 ? (
-            <div className="text-center py-10 text-zinc-400 text-xs">
-              Register an energy source first on the left to publish listings for nearby buyers.
-            </div>
-          ) : (
-            <form onSubmit={handleCreateListing} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Select Energy Source</label>
-                <select
-                  value={selectedSourceId}
-                  onChange={(e) => setSelectedSourceId(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white"
-                >
-                  {sources.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.deviceId} — Radius: {s.serviceRadiusMeters}m)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Available Energy for Marketplace (kWh)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={availableKwh}
-                  onChange={(e) => setAvailableKwh(e.target.value)}
-                  required
-                  min="0.5"
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white font-bold text-base"
-                />
-                <p className="text-[11px] text-zinc-400 mt-1">Amount of solar energy you want to offer for sale to nearby buyers.</p>
-              </div>
-
-              <div>
-                <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Price per kWh (₦)</label>
-                <input
-                  type="number"
-                  value={pricePerKwh}
-                  onChange={(e) => setPricePerKwh(e.target.value)}
-                  required
-                  min="10"
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-white font-bold text-base"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={creatingListing}
-                className="w-full bg-amber-500 text-zinc-950 font-bold py-3 px-4 rounded-xl shadow-sm hover:bg-amber-400 transition-all disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
-              >
-                {creatingListing ? 'Publishing Listing...' : 'Publish Energy Listing'}
-              </button>
-            </form>
-          )}
-        </section>
-      </div>
-
-      {/* Active Seller Listings Feed */}
-      <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
-        <h2 className="text-base font-bold text-zinc-900 dark:text-white">My Published Energy Listings</h2>
-
-        {loading ? (
-          <div className="h-20 bg-zinc-100 dark:bg-zinc-900 rounded-2xl animate-pulse"></div>
-        ) : listings.length === 0 ? (
-          <div className="text-center py-8 text-zinc-400 text-xs">
-            No energy listings published yet. Fill out the forms above to start selling solar energy locally.
+            <label htmlFor="seller-meter" className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Activated meter assigned to your account</label>
+            <select id="seller-meter" value={deviceId} onChange={(event) => setDeviceId(event.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+              {activatedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
+            </select>
           </div>
         ) : (
-          <div className="space-y-3">
-            {listings.map((item) => (
-              <div
-                key={item.id}
-                className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-zinc-900 dark:text-white">
-                      Listing #{item.id}
-                    </span>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        item.status === 'ACTIVE'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
-                          : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Listed: <span className="font-semibold text-zinc-800 dark:text-zinc-200">{Number(item.availableKwh).toFixed(2)} kWh</span> | Reserved: <span className="font-semibold text-amber-600">{Number(item.reservedKwh).toFixed(2)} kWh</span>
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between sm:justify-end gap-3 text-left sm:text-right w-full sm:w-auto">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      ₦{Number(item.pricePerKwh).toLocaleString()}/kWh
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handleToggleListing(item.id, item.status)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                      item.status === 'ACTIVE'
-                        ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-500 border-transparent'
-                    }`}
-                  >
-                    {item.status === 'ACTIVE' ? 'Pause' : 'Activate'}
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+            No activated meter is available yet. PAYGO must assign a meter to your account before you can register a solar source.
+            <Link href="/meters" className="mt-3 inline-block font-bold text-amber-600">Enter your activation code →</Link>
           </div>
         )}
+      </section>
+
+      <section className="rounded-3xl border border-zinc-200/70 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214] sm:p-6">
+        <h2 className="mb-4 font-bold text-zinc-900 dark:text-white">2. Register your solar installation</h2>
+        <form onSubmit={handleCreateSource} className="space-y-4">
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Energy source name</label>
+            <input value={deviceName} onChange={(event) => setDeviceName(event.target.value)} required className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" placeholder="e.g. Home rooftop solar" />
+          </div>
+          <div className="rounded-2xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Installation location</p>
+            <p className="mt-1 text-xs text-zinc-500">Stand at the location of the solar installation before requesting GPS.</p>
+            <button type="button" onClick={requestInstallationLocation} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Press to get installation location</button>
+            {latitude !== null && longitude !== null && (
+              <div className="mt-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-900">
+                <p className="font-mono text-xs text-zinc-700 dark:text-zinc-200">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
+                <button type="button" onClick={() => setLocationConfirmed(true)} className="mt-2 text-xs font-bold text-emerald-600">Confirm this installation location</button>
+                {locationConfirmed && <p className="mt-1 text-xs font-semibold text-emerald-600">Location confirmed</p>}
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Service radius (metres)</label>
+            <input type="number" min="50" max="5000" required value={serviceRadius} onChange={(event) => setServiceRadius(event.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+          </div>
+          <button type="submit" disabled={saving || !activatedMeters.length || !locationConfirmed} className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-bold text-zinc-950 disabled:opacity-50">{saving ? 'Saving…' : 'Register energy source'}</button>
+        </form>
+      </section>
+
+      <section className="rounded-3xl border border-zinc-200/70 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-[#121214] sm:p-6">
+        <h2 className="mb-4 font-bold text-zinc-900 dark:text-white">3. Publish an energy offer</h2>
+        {sources.length === 0 ? <p className="text-sm text-zinc-500">Register your energy source first. This step will unlock afterwards.</p> : (
+          <form onSubmit={handleCreateListing} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Energy source</label>
+              <select value={selectedSourceId} onChange={(event) => setSelectedSourceId(event.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                {sources.map((source) => <option key={source.id} value={source.id}>{source.name} ({source.deviceId})</option>)}
+              </select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><label className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Available energy (kWh)</label><input type="number" min="0.1" step="0.1" required value={availableKwh} onChange={(event) => setAvailableKwh(event.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" /></div>
+              <div><label className="mb-2 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Price per kWh (₦)</label><input type="number" min="1" required value={pricePerKwh} onChange={(event) => setPricePerKwh(event.target.value)} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" /></div>
+            </div>
+            <button type="submit" disabled={saving} className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-bold text-zinc-950 disabled:opacity-50">{saving ? 'Publishing…' : 'Publish energy offer'}</button>
+          </form>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-bold text-zinc-900 dark:text-white">Your published offers</h2>
+        {loading ? <p className="text-sm text-zinc-500">Loading…</p> : listings.length === 0 ? <p className="text-sm text-zinc-500">You haven't published an offer yet.</p> : listings.map((listing) => (
+          <div key={listing.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#121214]">
+            <div><p className="text-sm font-bold text-zinc-900 dark:text-white">Offer #{listing.id}</p><p className="mt-1 text-xs text-zinc-500">{Number(listing.availableKwh).toFixed(1)} kWh · ₦{Number(listing.pricePerKwh).toLocaleString()}/kWh · {listing.status}</p></div>
+            <button onClick={() => handleToggleListing(listing.id, listing.status)} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
+          </div>
+        ))}
       </section>
     </div>
   );

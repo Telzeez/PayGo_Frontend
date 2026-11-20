@@ -20,6 +20,7 @@ export default function BuyerMarketplacePage() {
 
   // Location State
   const [locationGranted, setLocationGranted] = useState(false);
+  const [locationPendingConfirmation, setLocationPendingConfirmation] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
@@ -37,7 +38,6 @@ export default function BuyerMarketplacePage() {
   const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
   const [buyerDeviceId, setBuyerDeviceId] = useState('');
 
-  const [isDemoLocation, setIsDemoLocation] = useState(false);
 
   // Request HTML5 Browser Location
   const requestLocation = () => {
@@ -47,27 +47,38 @@ export default function BuyerMarketplacePage() {
         (position) => {
           setLatitude(position.coords.latitude);
           setLongitude(position.coords.longitude);
-          setLocationGranted(true);
+          setLocationPendingConfirmation(true);
           setLocationStatus('granted');
-          setIsDemoLocation(false);
+          setError('');
         },
-        (_err) => {
-          useDemoLocation();
+        (err) => {
           setLocationStatus('denied');
+          setError(err.code === 1
+            ? 'Location permission was denied. Enable location access in your browser settings and try again.'
+            : 'We could not determine your location. Please try again.');
         },
         { timeout: 8000 }
       );
     } else {
-      useDemoLocation();
       setLocationStatus('unavailable');
+      setError('Your browser does not support location access. Please try another browser or device.');
     }
   };
 
-  const useDemoLocation = () => {
-    setLatitude(7.44);
-    setLongitude(3.9);
-    setLocationGranted(true);
-    setIsDemoLocation(true);
+  const confirmLocation = async () => {
+    if (latitude === null || longitude === null) return;
+    setLoading(true);
+    setError('');
+    try {
+      await marketplaceApi.saveBuyerLocation(latitude, longitude);
+      setLocationGranted(true);
+      setLocationPendingConfirmation(false);
+      setLocationStatus('granted');
+    } catch (err: any) {
+      setError(err.message || 'Unable to save your confirmed location. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fetch Nearby Listings when coordinates or radius changes
@@ -211,20 +222,24 @@ export default function BuyerMarketplacePage() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          {locationPendingConfirmation && latitude !== null && longitude !== null ? (
+            <div className="max-w-md mx-auto rounded-2xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 p-4 text-left space-y-3">
+              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Location detected. Is this correct?</p>
+              <p className="font-mono text-sm text-zinc-900 dark:text-white">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
+              <div className="flex gap-2">
+                <button onClick={confirmLocation} className="flex-1 rounded-xl bg-amber-500 px-4 py-3 text-xs font-bold text-zinc-950">Confirm location</button>
+                <button onClick={requestLocation} className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-3 text-xs font-semibold">Try again</button>
+              </div>
+            </div>
+          ) : (
             <button
               onClick={requestLocation}
-              className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2 mx-auto"
             >
-              Allow GPS Location
+              <MapPinIcon className="w-4 h-4" /> Press to get my location
             </button>
-            <button
-              onClick={useDemoLocation}
-              className="w-full sm:w-auto bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold py-3.5 px-6 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-xs"
-            >
-              Use Test Location (7.44, 3.90)
-            </button>
-          </div>
+          )}
+          <p className="text-[11px] text-zinc-400">Your location is requested only when you press the button. You can retry if it is inaccurate.</p>
         </section>
       ) : (
         <>
@@ -240,13 +255,8 @@ export default function BuyerMarketplacePage() {
                   </h2>
                   <div className="flex flex-col gap-2 mt-2">
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${isDemoLocation ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
-                      Coordinates: <strong className="text-zinc-900 dark:text-white">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong>
-                      {isDemoLocation && (
-                        <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tracking-wider">
-                          DEMO
-                        </span>
-                      )}
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Confirmed coordinates: <strong className="text-zinc-900 dark:text-white">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong>
                     </p>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                       Adjust matching distance radius below to screen nearby solar generation sources.
@@ -262,12 +272,7 @@ export default function BuyerMarketplacePage() {
                     >
                       <MapPinIcon className="w-3 h-3" /> Use GPS
                     </button>
-                    <button
-                      onClick={useDemoLocation}
-                      className="px-3 py-1.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[11px] font-bold transition-all"
-                    >
-                      Demo Location
-                    </button>
+                     
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-2.5 justify-end">

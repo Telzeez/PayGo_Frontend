@@ -2,13 +2,20 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
-  claimDevice: async (deviceId: string) => apiClient<{ success: boolean; device: { deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE' }; message: string }>(
-    '/api/owner/devices/claim',
-    { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId }) }
-  ),
+  provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING') =>
+    apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; expiresInHours: number; message: string }>(
+      `/api/owner/devices/${encodeURIComponent(deviceId)}/provision`,
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ ownerId, purpose }) }
+    ),
+
+  activateAssignedMeter: async (deviceId: string, activationCode: string) =>
+    apiClient<{ success: boolean; deviceId: string; message: string }>(
+      '/api/owner/devices/activate',
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId, activationCode }) }
+    ),
 
   getDevices: async () => apiClient<{ success: boolean; devices: Array<{
-    deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
+    deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE'; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; meterPurpose: 'GENERATION' | 'RECEIVING';
     lastSeenAt: string | null; lastUpdated: string | null;
   }> }>('/api/owner/devices', { method: 'GET', requireAuth: true }),
 

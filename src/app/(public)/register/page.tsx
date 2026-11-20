@@ -10,9 +10,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  // 1. Added role state variable with 'CUSTOMER' as the default selection
-  const [role, setRole] = useState<'CUSTOMER' | 'SELLER'>('CUSTOMER'); 
-  
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -31,9 +28,12 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      // 2. Pass 'role' directly as a clean variable now that it exists in state
-      await register({ email, password, phone, role });
-      router.push('/onboarding');
+      const result = await register({ email, password, phone, role: 'BUYER' });
+      if (result.requiresEmailVerification) {
+        router.push(`/login?registered=1&email=${encodeURIComponent(email)}`);
+      } else {
+        router.push('/onboarding');
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -50,37 +50,6 @@ export default function RegisterPage() {
             {error}
           </div>
         )}
-
-        {/* 3. Role Selection Segmented Control Buttons */}
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-            I want to join as a:
-          </label>
-          <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setRole('CUSTOMER')}
-              className={`py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                role === 'CUSTOMER'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
-            >
-              Energy Buyer
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('SELLER')}
-              className={`py-2.5 text-xs font-semibold rounded-lg transition-all ${
-                role === 'SELLER'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
-            >
-              Solar Seller
-            </button>
-          </div>
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5" htmlFor="email">

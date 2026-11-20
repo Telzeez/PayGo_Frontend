@@ -6,6 +6,7 @@ import { DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { useDevices } from '@/lib/contexts/DeviceContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function Dashboard() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
@@ -13,6 +14,7 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
   const { devices, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
+  const { user } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -21,7 +23,7 @@ export default function Dashboard() {
       if (isPolling) setIsRefreshing(true);
       try {
         if (!selectedDeviceId) {
-          if (!loadingDevices && mounted) setError(deviceError || 'No meters are assigned to this account yet.');
+          if (!loadingDevices && mounted) setError(deviceError || '');
           return;
         }
         const response = await devicesApi.getDevice(selectedDeviceId);
@@ -70,6 +72,23 @@ export default function Dashboard() {
       <div className="flex flex-col gap-6 animate-pulse">
         <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 h-64 border border-zinc-200/60 dark:border-zinc-800/60"></section>
         <section className="h-48 bg-zinc-100 dark:bg-[#121214] rounded-3xl"></section>
+      </div>
+    );
+  }
+
+  if (!selectedDeviceId && !deviceError && !loadingDevices) {
+    return (
+      <div className="mx-auto flex min-h-[420px] max-w-xl flex-col items-center justify-center rounded-3xl border border-zinc-200/60 bg-white p-8 text-center shadow-sm dark:border-zinc-800/60 dark:bg-[#121214]">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
+          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" /></svg>
+        </div>
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Your PAYGO account is ready</h2>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500 dark:text-zinc-400">There is no activated meter linked to your account yet. You can still explore nearby energy offers. Your meter balance and controls will appear here after a meter is assigned and activated.</p>
+        <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Link href="/marketplace" className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950 hover:bg-amber-400">Find Nearby Energy</Link>
+          {user?.isSeller && <Link href="/marketplace/seller" className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">Seller Setup</Link>}
+          <Link href="/profile" className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">View Profile</Link>
+        </div>
       </div>
     );
   }

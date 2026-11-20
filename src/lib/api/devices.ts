@@ -2,6 +2,12 @@ import { apiClient } from './client';
 import { DeviceResponse } from '../types';
 
 export const devicesApi = {
+  claimMeter: async (deviceId: string, claimCode: string) =>
+    apiClient<{ success: boolean; deviceId: string; purpose: 'GENERATION' | 'RECEIVING'; assignmentStatus: 'ACTIVATED'; message: string }>(
+      '/api/meters/claim',
+      { method: 'POST', requireAuth: true, body: JSON.stringify({ deviceId, claimCode }) }
+    ),
+
   provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING') =>
     apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; expiresInHours: number; message: string }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/provision`,

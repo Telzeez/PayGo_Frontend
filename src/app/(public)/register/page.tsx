@@ -19,6 +19,22 @@ export default function RegisterPage() {
   const { register, resendVerification } = useAuth();
   const router = useRouter();
 
+  const handleResend = async () => {
+    if (!email || isResending) return;
+
+    setIsResending(true);
+    setResendMessage('');
+
+    try {
+      await resendVerification(email.trim());
+      setResendMessage('A new verification link has been requested. Check your inbox and spam folder.');
+    } catch (err: any) {
+      setResendMessage(err?.message || 'Could not resend the verification email. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

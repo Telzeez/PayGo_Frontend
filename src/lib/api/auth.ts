@@ -1,79 +1,27 @@
 import { apiClient } from './client';
-import { AuthResponse } from '../types';
-
-export interface LoginParams {
-  email: string;
-  password: string;
-}
-
-export interface RegisterParams {
-  email: string;
-  password: string;
-  phone?: string;
-  role: string;
-}
+import { AuthResponse, UserProfile } from '../types';
 
 export const authApi = {
-  login: async (data: LoginParams) => {
-    return apiClient<AuthResponse>('/api/auth/login', {
+  syncFirebaseProfile: async (data: { phone?: string; role?: string }) => {
+    return apiClient<{ success: boolean; user: UserProfile }>('/api/auth/sync', {
       method: 'POST',
       body: JSON.stringify(data),
-      requireAuth: false,
-    });
-  },
-
-  loginWithGoogle: async (data: { token: string; role?: string }) => {
-    return apiClient<AuthResponse>('/api/auth/google', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      requireAuth: false,
-    });
-  },
-
-  registerGoogle: async (data: { registrationToken: string; phone?: string; role: string }) => {
-    return apiClient<AuthResponse>('/api/auth/register-google', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      requireAuth: false,
-    });
-  },
-
-
-  verifyEmail: async (token: string) => {
-    return apiClient<AuthResponse>('/api/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }), requireAuth: false });
-  },
-
-  resendVerification: async (email: string) => {
-    return apiClient<{ success: boolean; message: string }>('/api/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }), requireAuth: false });
-  },
-
-  register: async (data: RegisterParams) => {
-    return apiClient<AuthResponse>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      requireAuth: false,
+      requireAuth: true,
     });
   },
 
   getMe: async () => {
-    return apiClient<{ success: boolean; user: AuthResponse['user'] }>('/api/auth/me', {
+    return apiClient<{ success: boolean; user: UserProfile }>('/api/auth/me', {
       method: 'GET',
       requireAuth: true,
     });
   },
 
-  logout: async () => {
-    return apiClient<{ success: boolean; message: string }>('/api/auth/logout', {
-      method: 'POST',
-      requireAuth: true,
-    });
-  },
-
-  updateProfile: async (data: { email?: string; phone?: string; newPassword?: string }) => {
-    return apiClient<{ success: boolean; message: string; user: AuthResponse['user'] }>('/api/auth/profile', {
+  updateProfile: async (data: { phone?: string }) => {
+    return apiClient<{ success: boolean; message: string; user: UserProfile }>('/api/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
       requireAuth: true,
     });
-  }
+  },
 };

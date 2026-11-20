@@ -200,7 +200,7 @@ export default function SellerMarketplacePage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Latitude</label>
                 <input

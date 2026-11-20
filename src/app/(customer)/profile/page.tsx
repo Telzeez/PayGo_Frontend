@@ -176,6 +176,14 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-zinc-900 dark:text-white">How you use PAYGO</h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Review your buyer or seller access. You can enable both on one account.</p>
+        </div>
+        <Link href="/onboarding" className="shrink-0 rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-zinc-950 hover:bg-amber-400 text-center">Review account type</Link>
+      </section>
+
       {/* Assigned Device Card */}
       <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

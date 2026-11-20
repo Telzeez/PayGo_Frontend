@@ -41,13 +41,6 @@ const MarketIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const BookIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
-    <path d="M6.5 6H20"></path>
-  </svg>
-);
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -57,7 +50,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
     { label: 'EDH', path: '/marketplace', icon: MarketIcon },
     ...(user?.isSeller ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
-    { label: 'Docs', path: '/documentation', icon: BookIcon },
     ...(devices.length > 0 ? [{ label: 'Recharge', path: '/recharge', icon: ZapIcon }] : []),
     { label: 'History', path: '/transactions', icon: HistoryIcon },
     { label: 'Usage', path: '/consumption', icon: HistoryIcon },
@@ -70,7 +62,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sleek Header Navigation */}
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-2 w-full">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/" className="group flex items-center shrink-0">
+          <Link href="/" aria-label="PayGo home" title="Go to homepage" className="group flex items-center shrink-0">
             <span className="font-black text-xl tracking-tighter text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors">
               PayGo<span className="text-orange-500">.</span>
             </span>

@@ -31,6 +31,7 @@ interface AuthContextType {
   resendVerification: (email: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+  activateCapability: (capability: 'BUYER' | 'SELLER') => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
 }
@@ -159,7 +160,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
-    const result = await authApi.syncFirebaseProfile({});
+    const result = await authApi.getMe();
+    setUser(result.user);
+  };
+
+  const activateCapability = async (capability: 'BUYER' | 'SELLER') => {
+    const result = await authApi.activateCapability(capability);
     setUser(result.user);
   };
 
@@ -200,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resendVerification,
     sendPasswordReset,
     refreshUser,
+    activateCapability,
     updateProfile,
     logout,
   };

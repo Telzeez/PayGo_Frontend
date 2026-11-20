@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -13,8 +13,12 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     if (!isLoading && !isAuthenticated) {
       // Redirect to login, preserving the attempted url
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
     }
-  }, [isLoading, isAuthenticated, router, pathname]);
+    if (!isLoading && isAuthenticated && user && !user.isBuyer && !user.isSeller && pathname !== '/onboarding') {
+      router.replace('/onboarding');
+    }
+  }, [isLoading, isAuthenticated, user, router, pathname]);
 
   if (isLoading) {
     return (

@@ -58,7 +58,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'EDH', path: '/marketplace', icon: MarketIcon },
     ...(user?.isSeller ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     { label: 'Docs', path: '/documentation', icon: BookIcon },
-    { label: 'Recharge', path: '/recharge', icon: ZapIcon },
+    ...(devices.length > 0 ? [{ label: 'Recharge', path: '/recharge', icon: ZapIcon }] : []),
     { label: 'History', path: '/transactions', icon: HistoryIcon },
     { label: 'Usage', path: '/consumption', icon: HistoryIcon },
     { label: 'Profile', path: '/profile', icon: UserIcon },

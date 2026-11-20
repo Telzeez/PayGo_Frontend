@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -9,6 +9,8 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { verifyEmail } = useAuth();
+  const verifyEmailRef = useRef(verifyEmail);
+  verifyEmailRef.current = verifyEmail;
   const [message, setMessage] = useState('Checking your email verification…');
   const [failed, setFailed] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -20,7 +22,7 @@ function VerifyEmailContent() {
     let active = true;
 
     if (oobCode && mode === 'verifyEmail') {
-      verifyEmail(oobCode)
+      verifyEmailRef.current(oobCode)
         .then(() => {
           if (!active) return;
           setCompleted(true);
@@ -42,12 +44,12 @@ function VerifyEmailContent() {
       setCompleted(true);
       setMessage('Email verification was completed. Sign in again to finish linking your PAYGO account.');
     } else {
-      setFailed(true);
-      setMessage('This verification link is incomplete. Open the latest verification email and follow its link.');
+      setCompleted(true);
+      setMessage('If you have just completed email verification, sign in again to finish linking your PAYGO account.');
     }
 
     return () => { active = false; };
-  }, [oobCode, mode, verifyEmail, router]);
+  }, [oobCode, mode, router]);
 
   return (
     <main className="min-h-[60vh] flex items-center justify-center px-4 py-12">

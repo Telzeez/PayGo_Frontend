@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { AuthResponse, UserProfile } from '../types';
+import { UserProfile } from '../types';
 
 export const authApi = {
   syncFirebaseProfile: async (data: { phone?: string; role?: string }) => {

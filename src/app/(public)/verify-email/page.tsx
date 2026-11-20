@@ -25,10 +25,10 @@ function VerifyEmailContent() {
 
     let active = true;
     verifyEmailRef.current(token)
-      .then((role) => {
+      .then(() => {
         if (!active) return;
         setMessage('Your email is verified. Taking you to PAYGO…');
-        router.replace(role === 'OWNER' ? '/marketplace/seller' : '/dashboard');
+        router.replace('/onboarding');
       })
       .catch((error: any) => {
         if (!active) return;

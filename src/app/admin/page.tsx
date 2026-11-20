@@ -9,6 +9,12 @@ export default function AdminDashboardPage() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [provisionDeviceId, setProvisionDeviceId] = useState('');
+  const [provisionOwnerId, setProvisionOwnerId] = useState('');
+  const [meterPurpose, setMeterPurpose] = useState<'GENERATION' | 'RECEIVING'>('GENERATION');
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionMessage, setProvisionMessage] = useState('');
+  const [provisionError, setProvisionError] = useState('');
 
   const DEVICE_ID = 'DEVICE-001';
 
@@ -33,6 +39,27 @@ export default function AdminDashboardPage() {
     const interval = setInterval(() => fetchAdminData(true), 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleProvisionMeter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setProvisioning(true);
+    setProvisionMessage('');
+    setProvisionError('');
+    try {
+      const response = await devicesApi.provisionMeter(
+        provisionDeviceId.trim(),
+        Number(provisionOwnerId),
+        meterPurpose
+      );
+      setProvisionMessage(response.message || 'Meter provisioned and activation email sent.');
+      setProvisionDeviceId('');
+      setProvisionOwnerId('');
+    } catch (error: any) {
+      setProvisionError(error.message || 'Unable to provision this meter.');
+    } finally {
+      setProvisioning(false);
+    }
+  };
 
   const pendingCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'PENDING').length || 0;
   const failedCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'FAILED').length || 0;
@@ -109,6 +136,34 @@ export default function AdminDashboardPage() {
           <p className="text-[11px] text-zinc-400">Requires Recovery Token</p>
         </div>
       </div>
+
+      {/* Controlled meter assignment */}
+      <section className="rounded-3xl border border-zinc-200/60 bg-white p-5 shadow-sm dark:border-zinc-800/60 dark:bg-[#121214] sm:p-6">
+        <h2 className="text-base font-bold text-zinc-900 dark:text-white">Provision a PAYGO meter</h2>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Assign a meter already registered in the device registry to a verified account. The activation code is emailed to that account.</p>
+        {provisionMessage && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">{provisionMessage}</p>}
+        {provisionError && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-400">{provisionError}</p>}
+        <form onSubmit={handleProvisionMeter} className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="provision-device" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Registered meter ID</label>
+            <input id="provision-device" value={provisionDeviceId} onChange={(event) => setProvisionDeviceId(event.target.value)} required minLength={3} maxLength={50} pattern="[A-Za-z0-9][A-Za-z0-9_-]{2,49}" placeholder="e.g. PAYGO-001" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm font-mono dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+          </div>
+          <div>
+            <label htmlFor="provision-owner" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Owner account user ID</label>
+            <input id="provision-owner" type="number" min="1" step="1" value={provisionOwnerId} onChange={(event) => setProvisionOwnerId(event.target.value)} required placeholder="User ID" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+          </div>
+          <div>
+            <label htmlFor="meter-purpose" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Meter purpose</label>
+            <select id="meter-purpose" value={meterPurpose} onChange={(event) => setMeterPurpose(event.target.value as 'GENERATION' | 'RECEIVING')} className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+              <option value="GENERATION">Seller generation meter</option>
+              <option value="RECEIVING">Buyer receiving meter</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button type="submit" disabled={provisioning} className="w-full rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-zinc-950 disabled:opacity-50">{provisioning ? 'Assigning meter…' : 'Assign meter and email code'}</button>
+          </div>
+        </form>
+      </section>
 
       {/* Devices Overview Table */}
       <div className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">

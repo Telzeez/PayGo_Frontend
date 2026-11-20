@@ -1,4 +1,4 @@
-import { getFirebaseIdToken } from '../firebase/auth';
+import { clearFirebaseSession, getFirebaseIdToken, hasPendingSignup } from '../firebase/auth';
 
 function getBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -95,6 +95,15 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
     return data as T;
   } catch (error) {
     if (error instanceof ApiError) {
+      if (
+        error.status === 403 &&
+        error.data?.code === 'PAYGO_PROFILE_NOT_LINKED' &&
+        !hasPendingSignup() &&
+        typeof window !== 'undefined'
+      ) {
+        clearFirebaseSession();
+        window.dispatchEvent(new Event('paygo:profile-missing'));
+      }
       throw error;
     }
     // Network or parsing errors

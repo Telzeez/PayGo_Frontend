@@ -197,29 +197,47 @@ function AuthPageContent() {
             </div>
           )}
           {canResendVerification && (
-            <div className="mb-4 space-y-2">
+            <section className="mb-5 rounded-xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-500/20 dark:bg-amber-500/5" aria-labelledby="resend-verification-title">
+              <div className="mb-3">
+                <h3 id="resend-verification-title" className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Email verification required</h3>
+                <p className="mt-1 text-sm leading-5 text-zinc-600 dark:text-zinc-400">
+                  {verificationEmail ? <>We need you to verify <strong className="break-all">{verificationEmail}</strong> before you can sign in.</> : 'Verify your email address before signing in.'}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleResendVerification}
-                disabled={isResending}
-                className="text-sm font-semibold text-amber-600 transition-colors hover:text-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isResending || !email.trim()}
+                aria-busy={isResending}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               >
-                {isResending ? 'Sending verification link…' : 'Resend verification email'}
+                {isResending ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+                      <path className="opacity-90" d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    Sending verification link…
+                  </>
+                ) : 'Resend verification email'}
               </button>
               {resendFeedback && (
                 <p
                   role="status"
                   aria-live="polite"
-                  className={`rounded-lg px-3 py-2 text-sm ${
+                  className={`mt-3 rounded-lg border px-3 py-2.5 text-sm leading-5 ${
                     resendFeedback.type === 'success'
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-                      : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+                      : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300'
                   }`}
                 >
                   {resendFeedback.message}
                 </p>
               )}
-            </div>
+              <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                If the email does not arrive, check your spam folder. You can request another link after the cooldown.
+              </p>
+            </section>
           )}
 
           {registrationToken && (

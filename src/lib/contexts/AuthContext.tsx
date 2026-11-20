@@ -68,10 +68,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             error?.status === 403 &&
             error?.data?.code === 'PAYGO_PROFILE_NOT_LINKED';
           if (!isUnlinkedProfile) throw error;
-          result = await authApi.syncFirebaseProfile({
-            phone: pending?.phone,
-            role: pending?.role,
-          });
+          if (pending) {
+            // Finish profile creation only for an account whose signup is still pending.
+            result = await authApi.syncFirebaseProfile({
+              phone: pending.phone,
+              role: pending.role,
+            });
+          } else {
+            // The Firebase identity is valid, but its PAYGO profile was deleted.
+            // End the local session instead of silently recreating the database account.
+            clearFirebaseSession();
+            clearPendingSignup();
+            if (active) setUser(null);
+            return;
+          }
         }
         if (active && result.success) {
           setUser(result.user);

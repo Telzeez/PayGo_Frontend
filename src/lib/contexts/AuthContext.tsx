@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const account = await getFirebaseAccount(idToken);
         if (!account.emailVerified) return;
         const pending = getPendingSignup(account.email);
-        let result;
+        let result: Awaited<ReturnType<typeof authApi.getMe>>;
         try {
           result = await authApi.getMe();
         } catch (error: any) {

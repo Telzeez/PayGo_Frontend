@@ -34,12 +34,25 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} antialiased min-h-screen`}>
       <body className="min-h-screen flex flex-col font-sans">
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-          <AuthProvider>
-            {children}
-            <CookieConsent />
-          </AuthProvider>
-        </GoogleOAuthProvider>
+        {process.env.NEXT_PUBLIC_PAYGO_MAINTENANCE_MODE !== 'false' ? (
+          <main className="flex min-h-screen flex-1 items-center justify-center bg-zinc-950 px-6 text-center text-white">
+            <section className="w-full max-w-lg">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-400">PayGo</p>
+              <h1 className="mb-4 text-3xl font-semibold tracking-tight">We’ll be back shortly.</h1>
+              <p className="text-base leading-7 text-zinc-300">
+                PayGo is temporarily unavailable while we complete a security and authentication update.
+                Your account and transaction records remain safe and unchanged. Please check back later.
+              </p>
+            </section>
+          </main>
+        ) : (
+          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+            <AuthProvider>
+              {children}
+              <CookieConsent />
+            </AuthProvider>
+          </GoogleOAuthProvider>
+        )}
       </body>
     </html>
   );

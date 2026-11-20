@@ -1,0 +1,26 @@
+name: Auth migration build
+on:
+  push:
+    branches: [feature/firebase-auth-migration]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: paygo-697b9
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: paygo-697b9.firebaseapp.com
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ci-placeholder
+      NEXT_PUBLIC_API_URL: https://example.invalid
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build

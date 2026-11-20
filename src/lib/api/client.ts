@@ -1,3 +1,5 @@
+import { getFirebaseIdToken } from '../firebase/auth';
+
 function getBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!envUrl) {
@@ -31,18 +33,6 @@ interface FetchOptions extends RequestInit {
 }
 
 /**
- * Retrieves the stored JWT token.
- * For client-side, this gets it from localStorage.
- * For server-side rendering, you'd need to pass it explicitly or extract from cookies.
- */
-function getToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('paygo_token');
-  }
-  return null;
-}
-
-/**
  * Centralized API client wrapper around fetch.
  */
 export async function apiClient<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
@@ -55,7 +45,7 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   }
 
   if (requireAuth) {
-    const token = getToken();
+    const token = await getFirebaseIdToken();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }

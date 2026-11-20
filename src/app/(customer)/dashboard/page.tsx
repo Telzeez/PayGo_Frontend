@@ -110,8 +110,8 @@ export default function Dashboard() {
       <OnboardingTutorial />
       
       {/* Premium Dashboard Card */}
-      <section className="bg-white dark:bg-[#121214] rounded-3xl p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
-        <div className="flex items-center justify-between mb-6">
+      <section className="bg-white dark:bg-[#121214] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
             {devices.length > 1 ? (
@@ -146,7 +146,7 @@ export default function Dashboard() {
         <div className="flex flex-col items-center justify-center py-6 mb-2">
           <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase mb-3">Available Balance</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-5xl sm:text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
+            <p className="text-4xl sm:text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
               {Number(balance || 0).toFixed(2)}
             </p>
             <span className="text-2xl font-medium text-zinc-400 dark:text-zinc-500">kWh</span>
@@ -211,7 +211,7 @@ export default function Dashboard() {
             const isFailed = tx.hardwareStatus === 'FAILED';
 
             return (
-              <div key={tx.id} className="bg-white dark:bg-[#121214] p-4.5 rounded-2xl flex items-center justify-between shadow-sm border border-zinc-200/60 dark:border-zinc-800/60 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50 cursor-pointer">
+              <div key={tx.id} className="bg-white dark:bg-[#121214] p-3 sm:p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50 cursor-pointer">
                 <div className="flex items-center gap-4">
                   
                   {isConfirmed && (

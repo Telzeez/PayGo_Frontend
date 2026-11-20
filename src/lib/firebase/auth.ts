@@ -77,6 +77,17 @@ export function getPendingAccountRole() {
   return localStorage.getItem(ROLE_KEY) === 'OWNER' ? 'OWNER' : 'BUYER';
 }
 
+export function setPendingPhone(phone?: string) {
+  if (typeof window === 'undefined') return;
+  if (phone?.trim()) localStorage.setItem('paygo_pending_phone', phone.trim());
+  else localStorage.removeItem('paygo_pending_phone');
+}
+
+export function getPendingPhone() {
+  if (typeof window === 'undefined') return undefined;
+  return localStorage.getItem('paygo_pending_phone') || undefined;
+}
+
 export async function createFirebaseAccount(email: string, password: string): Promise<FirebaseSession> {
   const session = await requestFirebase<FirebaseSession>('accounts:signUp', {
     email: email.trim().toLowerCase(),

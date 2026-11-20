@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { devicesApi } from '@/lib/api/devices';
 import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
 
-type AssignedMeter = { deviceId: string; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; status: 'ONLINE' | 'OFFLINE' };
+type AssignedMeter = { deviceId: string; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; meterPurpose: 'GENERATION' | 'RECEIVING'; status: 'ONLINE' | 'OFFLINE' };
 
 export default function SellerMarketplacePage() {
   const [sources, setSources] = useState<SellerSource[]>([]);
@@ -41,7 +41,7 @@ export default function SellerMarketplacePage() {
       if (listingRes.success) setListings(listingRes.listings);
       const assigned = (meterRes.devices || []) as AssignedMeter[];
       setMeters(assigned);
-      const activated = assigned.find((meter) => meter.assignmentStatus === 'ACTIVATED');
+      const activated = assigned.find((meter) => meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'GENERATION');
       if (activated && !deviceId) setDeviceId(activated.deviceId);
     } catch (err: any) {
       setError(err.message || 'Unable to load your seller setup.');

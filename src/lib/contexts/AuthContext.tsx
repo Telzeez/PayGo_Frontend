@@ -56,9 +56,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const account = await getFirebaseAccount(idToken);
         if (!account.emailVerified) return;
         const pending = getPendingSignup(account.email);
-        const result = await authApi.getMe().catch(async () =>
-          authApi.syncFirebaseProfile({ phone: pending?.phone, role: pending?.role })
-        );
+        let result;
+        try {
+          result = await authApi.getMe();
+        } catch (error: any) {
+          // Only create/link a profile when Firebase authentication succeeded
+          // but PAYGO explicitly reports that this identity has no profile yet.
+          // Do not turn transient API/database failures into profile creation.
+          const isUnlinkedProfile =
+            error?.status === 403 &&
+            error?.data?.code === 'PAYGO_PROFILE_NOT_LINKED';
+          if (!isUnlinkedProfile) throw error;
+          result = await authApi.syncFirebaseProfile({
+            phone: pending?.phone,
+            role: pending?.role,
+          });
+        }
         if (active && result.success) {
           setUser(result.user);
           clearPendingSignup();

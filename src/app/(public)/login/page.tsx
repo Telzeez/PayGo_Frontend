@@ -46,6 +46,7 @@ function AuthPageContent() {
   const [verificationEmail, setVerificationEmail] = useState('');
   const [canResendVerification, setCanResendVerification] = useState(false);
   const [showGoogleNotice, setShowGoogleNotice] = useState(false);
+  const [registrationNotice] = useState(searchParams.get('registered') === '1');
 
   const { login, register, registerGoogle, resendVerification } = useAuth();
   const router = useRouter();
@@ -76,6 +77,9 @@ function AuthPageContent() {
       router.replace(destination);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
+      if (isLogin && err?.status === 403 && err?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        setCanResendVerification(true);
+      }
       setIsSubmitting(false);
     }
   };
@@ -138,6 +142,11 @@ function AuthPageContent() {
         </div>
       ) : (
         <div className="animate-in fade-in duration-500">
+          {registrationNotice && isLogin && (
+            <div role="status" className="mb-4 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300">
+              Your account has been created. Check your inbox (and spam folder) for the PAYGO email verification link before signing in.
+            </div>
+          )}
           {error && !registrationToken && (
             <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm font-medium border border-red-100 dark:border-red-500/20 mb-4 flex items-start gap-2">
               <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

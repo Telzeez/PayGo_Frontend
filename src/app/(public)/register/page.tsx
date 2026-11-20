@@ -14,7 +14,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [resendMessage, setResendMessage] = useState('');
+  const [resendMessage, setResendMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const { register, resendVerification } = useAuth();
   const router = useRouter();
@@ -23,13 +23,13 @@ export default function RegisterPage() {
     if (!email || isResending) return;
 
     setIsResending(true);
-    setResendMessage('');
+    setResendMessage(null);
 
     try {
       await resendVerification(email.trim());
-      setResendMessage('A new verification link has been requested. Check your inbox and spam folder.');
+      setResendMessage({ type: 'success', message: 'A new verification link has been requested. Check your inbox and spam folder.' });
     } catch (err: any) {
-      setResendMessage(err?.message || 'Could not resend the verification email. Please try again.');
+      setResendMessage({ type: 'error', message: err?.message || 'Could not resend the verification email. Please try again.' });
     } finally {
       setIsResending(false);
     }
@@ -94,7 +94,7 @@ export default function RegisterPage() {
               ) : 'Resend verification email'}
             </button>
             {resendMessage && (
-              <p role="status" aria-live="polite" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-5 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">{resendMessage}</p>
+              <p role="status" aria-live="polite" className={"rounded-lg border px-3 py-2.5 text-sm leading-5 " + (resendMessage.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300")}>{resendMessage.message}</p>
             )}
           </section>
         )}

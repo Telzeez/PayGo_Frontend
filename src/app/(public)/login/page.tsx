@@ -313,7 +313,6 @@ function AuthPageContent() {
                 onError={() => {
                   setError('Google Authentication failed.');
                 }}
-                useOneTap
                 theme="outline"
                 size="large"
                 shape="rectangular"

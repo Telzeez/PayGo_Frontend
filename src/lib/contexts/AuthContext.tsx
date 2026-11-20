@@ -93,7 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.success && res.token && res.user) {
       localStorage.setItem('paygo_token', res.token);
       setUser(res.user);
+      return res.user.role;
     }
+    return undefined;
   };
 
   const resendVerification = async (email: string) => {

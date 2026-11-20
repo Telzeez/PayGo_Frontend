@@ -38,7 +38,7 @@ function AuthPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'BUYER' | 'OWNER'>('BUYER');
+  const role: 'BUYER' = 'BUYER';
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -72,7 +72,7 @@ function AuthPageContent() {
 
       setIsSubmitting(false);
       setIsSuccess(true);
-      const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
+      const destination = isLogin ? redirect : '/onboarding';
       router.replace(destination);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');

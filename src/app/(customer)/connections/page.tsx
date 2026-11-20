@@ -321,7 +321,7 @@ export default function ConnectionsPage() {
                   Previous approved limit remains active: {Number(connection.approvedPowerW).toFixed(0)} W. The increased load is not active until approved.
                 </p>
               )}
-              {connection.appliances?.length > 0 && (
+              {connection.appliances.length > 0 && (
                 <ul className="mt-3 space-y-1 text-xs text-zinc-500">
                   {connection.appliances.map((item) => <li key={item.applianceId}>{item.quantity} × {item.name} ({item.simultaneousQuantity} simultaneous, {item.ratedPowerW} W each)</li>)}
                 </ul>

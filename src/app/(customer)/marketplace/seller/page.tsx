@@ -16,7 +16,7 @@ export default function SellerMarketplacePage() {
 
   // New Source Form
   const [deviceName, setDeviceName] = useState('Home Rooftop Solar');
-  const [deviceId, setDeviceId] = useState('DEVICE-001');
+  const [deviceId, setDeviceId] = useState('');
   const [sourceLat, setSourceLat] = useState('7.4400');
   const [sourceLon, setSourceLon] = useState('3.9000');
   const [serviceRadius, setServiceRadius] = useState('500');
@@ -125,7 +125,7 @@ export default function SellerMarketplacePage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-4xl min-w-0 mx-auto w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -136,9 +136,9 @@ export default function SellerMarketplacePage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Seller Portal — My Energy</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Seller Portal — My Energy</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Register solar generation sources and list surplus kWh for nearby buyers.
+              Connect your PAYGO meter, register your solar source, and list surplus energy for nearby buyers.
             </p>
           </div>
         </div>
@@ -168,11 +168,11 @@ export default function SellerMarketplacePage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Step 1: Register Energy Source */}
-        <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+        {/* Step 1: Connect Meter & Register Energy Source */}
+        <section className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
             <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs">1</span>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Register Energy Source</h2>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Connect Meter & Register Energy Source</h2>
           </div>
 
           <form onSubmit={handleCreateSource} className="space-y-3.5 text-xs">
@@ -196,11 +196,11 @@ export default function SellerMarketplacePage() {
                 onChange={(e) => setDeviceId(e.target.value)}
                 required
                 className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 font-mono text-zinc-900 dark:text-white"
-                placeholder="DEVICE-001"
+                placeholder="e.g. PAYGO-001"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <label className="block text-zinc-700 dark:text-zinc-300 font-medium mb-1">Latitude</label>
                 <input
@@ -249,7 +249,7 @@ export default function SellerMarketplacePage() {
         </section>
 
         {/* Step 2: Publish Energy Listing */}
-        <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm space-y-4">
+        <section className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
             <span className="w-6 h-6 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs">2</span>
             <h2 className="text-base font-bold text-zinc-900 dark:text-white">Publish Energy Listing</h2>
@@ -329,7 +329,7 @@ export default function SellerMarketplacePage() {
             {listings.map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl p-4 flex items-center justify-between gap-4"
+                className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -351,7 +351,7 @@ export default function SellerMarketplacePage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-4 text-right">
+                <div className="flex items-center justify-between sm:justify-end gap-3 text-left sm:text-right w-full sm:w-auto">
                   <div>
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                       ₦{Number(item.pricePerKwh).toLocaleString()}/kWh

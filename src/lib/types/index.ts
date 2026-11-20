@@ -43,6 +43,8 @@ export interface AuthResponse {
   user?: UserProfile;
   needsRegistration?: boolean;
   registrationToken?: string;
+  requiresEmailVerification?: boolean;
+  email?: string;
 }
 
 export interface PaymentInitiateRequest {

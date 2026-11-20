@@ -43,8 +43,11 @@ function AuthPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [registrationToken, setRegistrationToken] = useState<string | null>(null);
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [canResendVerification, setCanResendVerification] = useState(false);
 
-  const { login, register, registerGoogle, loginWithGoogle } = useAuth();
+  const { login, register, registerGoogle, loginWithGoogle, resendVerification } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,13 +61,18 @@ function AuthPageContent() {
       } else if (isLogin) {
         await login({ email, password });
       } else {
-        await register({ email, password, phone: phone || undefined, role });
+        const result = await register({ email, password, phone: phone || undefined, role });
+        if (result.requiresEmailVerification) {
+          setVerificationPending(true);
+          setVerificationEmail(result.email || email);
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       setIsSubmitting(false);
       setIsSuccess(true);
-
-      const destination = role === 'OWNER' ? '/admin' : redirect;
+      const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
       router.replace(destination);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your details.');
@@ -77,7 +85,16 @@ function AuthPageContent() {
       title={isLogin ? "Welcome Back" : "Create Account"}
       subtitle={isLogin ? "Sign in to your PayGo account" : "Join PayGo today"}
     >
-      {isSubmitting ? (
+      {verificationPending ? (
+        <div className="space-y-4 py-6 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 text-2xl">✉</div>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Check your inbox</h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">We sent a verification link to <strong className="break-all text-zinc-800 dark:text-zinc-200">{verificationEmail}</strong>. Verify your email before signing in.</p>
+          <button type="button" onClick={async () => { try { await resendVerification(verificationEmail); setError('A new verification link has been sent if the account still needs verification.'); } catch (err: any) { setError(err.message || 'Could not resend the verification email.'); } }} className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm font-semibold">Resend verification email</button>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <button type="button" onClick={() => { setVerificationPending(false); setIsLogin(true); setError(''); }} className="text-sm font-semibold text-amber-600">Back to sign in</button>
+        </div>
+      ) : isSubmitting ? (
         <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-in fade-in zoom-in duration-300">
           <div className="relative w-28 h-24 flex items-center justify-center">
             <div className="absolute bottom-2 w-24 h-2 rounded-full bg-amber-500/10 blur-md animate-pulse" />
@@ -128,6 +145,9 @@ function AuthPageContent() {
               </svg>
               <span>{error}</span>
             </div>
+          )}
+          {canResendVerification && (
+            <button type="button" onClick={async () => { try { await resendVerification(email); setError('A fresh verification link has been requested. Check your inbox.'); setCanResendVerification(false); } catch (err: any) { setError(err.message || 'Could not resend the verification email.'); } }} className="mb-4 text-sm font-semibold text-amber-600 hover:text-amber-500">Resend verification email</button>
           )}
 
           {registrationToken && (
@@ -205,7 +225,7 @@ function AuthPageContent() {
 
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    Account Type
+                    How will you use PAYGO?
                   </label>
                   <div className="flex gap-3">
                     <button
@@ -228,7 +248,7 @@ function AuthPageContent() {
                           : 'bg-white dark:bg-[#09090B] text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800'
                       }`}
                     >
-                      Admin (Owner)
+                      Energy Seller (Prosumer)
                     </button>
                   </div>
                 </div>
@@ -310,7 +330,7 @@ function AuthPageContent() {
                         setError(''); // Clear error state since it's a success
                       } else {
                         setIsSuccess(true);
-                        const destination = role === 'OWNER' ? '/admin' : redirect;
+                        const destination = !isLogin && role === 'OWNER' ? '/marketplace/seller' : redirect;
                         router.replace(destination);
                       }
                     }

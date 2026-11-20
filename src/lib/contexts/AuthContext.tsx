@@ -11,7 +11,9 @@ interface AuthContextType {
   login: (params: LoginParams) => Promise<void>;
   loginWithGoogle: (token: string, role?: string) => Promise<{needsRegistration?: boolean, registrationToken?: string} | void>;
   registerGoogle: (params: { registrationToken: string; phone?: string; role: string }) => Promise<void>;
-  register: (params: RegisterParams) => Promise<void>;
+  register: (params: RegisterParams) => Promise<{ requiresEmailVerification?: boolean; email?: string }>;
+  verifyEmail: (token: string) => Promise<string | undefined>;
+  resendVerification: (email: string) => Promise<void>;
   updateProfile: (data: { email?: string; phone?: string; newPassword?: string }) => Promise<void>;
   logout: () => void;
 }
@@ -76,10 +78,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (params: RegisterParams) => {
     const res = await authApi.register(params);
+    if (res.success && res.requiresEmailVerification) {
+      return { requiresEmailVerification: true, email: res.email };
+    }
     if (res.success && res.token && res.user) {
       localStorage.setItem('paygo_token', res.token);
       setUser(res.user);
     }
+    return {};
+  };
+
+  const verifyEmail = async (token: string): Promise<string | undefined> => {
+    const res = await authApi.verifyEmail(token);
+    if (res.success && res.token && res.user) {
+      localStorage.setItem('paygo_token', res.token);
+      setUser(res.user);
+      return res.user.role;
+    }
+    return undefined;
+  };
+
+  const resendVerification = async (email: string) => {
+    await authApi.resendVerification(email);
   };
 
   const updateProfile = async (data: { email?: string; phone?: string; newPassword?: string }) => {
@@ -104,6 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithGoogle,
     register,
     registerGoogle,
+    verifyEmail,
+    resendVerification,
     updateProfile,
     logout,
   };

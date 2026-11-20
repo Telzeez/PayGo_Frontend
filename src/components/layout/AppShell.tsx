@@ -55,7 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
-    { label: 'EDH', path: '/marketplace', icon: MarketIcon },
+    { label: 'EDH', path: '/marketplace', icon: MarketIcon },\n    ...(user?.role === 'OWNER' ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     { label: 'Docs', path: '/documentation', icon: BookIcon },
     { label: 'Recharge', path: '/recharge', icon: ZapIcon },
     { label: 'History', path: '/transactions', icon: HistoryIcon },
@@ -67,8 +67,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col min-h-screen bg-[#F9FAFB] text-zinc-900 dark:bg-[#09090B] dark:text-zinc-50 w-full selection:bg-orange-500/30">
       
       {/* Sleek Header Navigation */}
-      <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#09090B]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-3.5 flex justify-between items-center w-full">
-        <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-2 w-full">
+        <div className="flex items-center gap-3 min-w-0">
           <Link href="/" className="group flex items-center shrink-0">
             <span className="font-black text-xl tracking-tighter text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors">
               PayGo<span className="text-orange-500">.</span>
@@ -96,29 +96,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
         
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           {devices.length > 1 && (
-            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[145px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[112px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
               {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
             </select>
           )}
           {user?.role === 'OWNER' && (
             <Link
               href="/marketplace/seller"
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 ${
                 pathname === '/marketplace/seller'
                   ? 'bg-amber-500 text-zinc-950 font-extrabold shadow-sm'
                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
               }`}
             >
-              <span>Seller Portal</span>
+              <span className="hidden xs:inline sm:inline">Seller</span><span className="sm:hidden">Sell</span>
             </Link>
           )}
 
           <Link 
             href="/profile" 
             title="Account Profile & Settings"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+            className="flex items-center gap-2 px-2 sm:px-3 py-2 sm:py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-semibold text-zinc-700 dark:text-zinc-300"
           >
             <UserIcon className="w-4 h-4 text-zinc-500" />
             <span className="hidden sm:inline">{user?.email ? user.email.split('@')[0] : 'Profile'}</span>
@@ -127,7 +127,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={logout}
             title="Sign Out of Account"
-            className="px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 text-xs font-bold transition-all border border-red-200/50 dark:border-red-500/20 flex items-center gap-1.5"
+            className="px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 text-xs font-bold transition-all border border-red-200/50 dark:border-red-500/20 flex items-center gap-1.5"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -139,7 +139,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 pb-24">
+      <main className="flex-1 w-full min-w-0 max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 pb-24">
         {children}
       </main>
 
@@ -161,15 +161,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
-        <ul className="flex justify-around items-center p-2 max-w-md mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'History', 'Usage', 'Profile'].includes(item.label)).map((item) => {
+        <ul className="flex justify-around items-center px-1 py-2 max-w-lg mx-auto">
+          {navItems.filter(item => ['Home', 'EDH', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.role === 'OWNER')).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
               <li key={item.path}>
                 <Link
                   href={item.path}
-                  className={`flex flex-col items-center p-2 transition-colors w-14 ${
+                  className={`flex flex-col items-center px-2 py-2 transition-colors min-w-0 flex-1 ${
                     isActive 
                       ? 'text-zinc-900 dark:text-white font-semibold' 
                       : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'

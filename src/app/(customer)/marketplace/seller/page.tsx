@@ -17,6 +17,8 @@ export default function SellerMarketplacePage() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
   const [serviceRadius, setServiceRadius] = useState('500');
   const [availableKwh, setAvailableKwh] = useState('10');
   const [pricePerKwh, setPricePerKwh] = useState('250');
@@ -67,20 +69,48 @@ export default function SellerMarketplacePage() {
     setLocationConfirmed(false);
     setLatitude(null);
     setLongitude(null);
+    setLocationAccuracy(null);
     if (!navigator.geolocation) {
       setError('This browser does not support location access. Please use a supported device/browser.');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    setLocating(true);
+    let watchId: number | null = null;
+    let wakeLock: any = null;
+    let finished = false;
+    const finish = async () => {
+      if (finished) return;
+      finished = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      try { await wakeLock?.release(); } catch {}
+      setLocating(false);
+    };
+    const timeout = window.setTimeout(() => {
+      void finish();
+      setError('We could not get a clear reading yet. Move closer to an open area and try again.');
+    }, 30000);
+    const stop = async () => { window.clearTimeout(timeout); await finish(); };
+    (navigator as any).wakeLock?.request('screen').then((lock: any) => { wakeLock = lock; }).catch(() => {});
+    watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        // Ignore weak fixes; keep watching until a reading within 20 m is available.
+        if (position.coords.accuracy > 20) return;
+        window.clearTimeout(timeout);
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
+        setLocationAccuracy(position.coords.accuracy);
         setLocationConfirmed(false);
+        await stop();
       },
-      (geoError) => { setLatitude(null); setLongitude(null); setLocationConfirmed(false); setError(geoError.code === 1
-        ? 'Location permission was denied. Enable it in your browser settings and try again.'
-        : 'Unable to detect the installation location. Please try again.'); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      async (geoError) => {
+        await stop();
+        setError(geoError.code === 1
+          ? 'Location permission was denied. Allow location access in your browser settings and try again.'
+          : geoError.code === 3
+            ? 'Getting your location took too long. Move somewhere with a clearer signal and try again.'
+            : 'We could not determine your location. Check your device location settings and try again.');
+      },
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
   };
 
@@ -93,7 +123,7 @@ export default function SellerMarketplacePage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       const response = await marketplaceApi.createSource({
-        deviceId, name: deviceName, latitude, longitude,
+        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy ?? undefined,
         serviceRadiusMeters: parseInt(serviceRadius, 10),
       });
       if (response.success) {
@@ -179,10 +209,12 @@ export default function SellerMarketplacePage() {
           <div className="rounded-2xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Installation location</p>
             <p className="mt-1 text-xs text-zinc-500">Stand at the solar installation and detect its position, then adjust the pin to the exact premises.</p>
-            <button type="button" onClick={requestInstallationLocation} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Detect installation with GPS</button>
+            <button type="button" onClick={requestInstallationLocation} disabled={locating} aria-busy={locating} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900">{locating ? 'Finding a clear location…' : 'Use my current location'}</button>
+            {locating && <p role="status" aria-live="polite" className="mt-2 text-xs text-amber-600">Keep this screen open. We are waiting for a clear reading (within 20 metres).</p>}
             {latitude !== null && longitude !== null && (
               <div className="mt-3 space-y-3">
                 <LocationPicker latitude={latitude} longitude={longitude} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); setLocationConfirmed(false); }} />
+                {locationAccuracy !== null && <p className="text-xs text-zinc-500">Location reading: within {Math.round(locationAccuracy)} metres.</p>}
                 <button type="button" onClick={() => setLocationConfirmed(true)} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white">Confirm this installation pin</button>
                 {locationConfirmed && <p className="text-xs font-semibold text-emerald-600">Installation location confirmed</p>}
               </div>

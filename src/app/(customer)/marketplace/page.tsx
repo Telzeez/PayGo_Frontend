@@ -301,22 +301,24 @@ export default function BuyerMarketplacePage() {
               </div>
             </div>
           ) : (
-            <button
-              onClick={requestLocation}
-              disabled={locating}
-              aria-busy={locating}
-              className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-wait"
-            >
-              {locating
-                ? <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin" />
-                : <MapPinIcon className="w-4 h-4" />}
-              {locating ? 'Getting your location…' : 'Press to get my location'}
-            </button>
-            {locating && (
-              <p role="status" aria-live="polite" className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                Please wait while your device finds its location. This may take a few seconds.
-              </p>
-            )}
+            <>
+              <button
+                onClick={requestLocation}
+                disabled={locating}
+                aria-busy={locating}
+                className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-wait"
+              >
+                {locating
+                  ? <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin" />
+                  : <MapPinIcon className="w-4 h-4" />}
+                {locating ? 'Getting your location…' : 'Press to get my location'}
+              </button>
+              {locating && (
+                <p role="status" aria-live="polite" className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                  Please wait while your device finds its location. This may take a few seconds.
+                </p>
+              )}
+            </>
           )}
           <p className="text-[11px] text-zinc-400">Your location is requested only when you press the button. You can retry if it is inaccurate.</p>
         </section>

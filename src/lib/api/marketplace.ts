@@ -66,12 +66,6 @@ export interface MarketplacePurchaseResult {
 }
 
 export const marketplaceApi = {
-  saveBuyerLocation: async (latitude: number, longitude: number) =>
-    apiClient<{ success: boolean; location: { latitude: number; longitude: number; updatedAt: string } }>(
-      '/api/marketplace/location',
-      { method: 'POST', requireAuth: true, body: JSON.stringify({ latitude, longitude }) }
-    ),
-
   // Discovery
   getNearbyListings: async (latitude: number, longitude: number, radiusMeters?: number) => {
     let url = `/api/marketplace/nearby?latitude=${latitude}&longitude=${longitude}`;

@@ -45,6 +45,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { devices, selectedDeviceId, selectDevice } = useDevices();
+  const isOnboarding = pathname === '/onboarding';
 
   const navItems = [
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
@@ -58,7 +59,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F9FAFB] text-zinc-900 dark:bg-[#09090B] dark:text-zinc-50 w-full selection:bg-orange-500/30">
+    <div className="flex flex-col min-h-dvh bg-[#F9FAFB] text-zinc-900 dark:bg-[#09090B] dark:text-zinc-50 w-full selection:bg-orange-500/30">
       
       {/* Sleek Header Navigation */}
       <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-3 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-2 w-full">
@@ -133,12 +134,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full min-w-0 max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 pb-24">
+      <main className={`flex-1 w-full min-w-0 max-w-5xl mx-auto p-3 sm:p-6 lg:p-8 ${isOnboarding ? "pb-6" : "pb-24"}`}>
         {children}
       </main>
 
       {/* Footer Bar */}
-      <footer className="w-full border-t border-zinc-200/60 dark:border-zinc-800/60 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 pb-24 md:pb-8">
+      {!isOnboarding && <footer className="w-full border-t border-zinc-200/60 dark:border-zinc-800/60 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 pb-24 md:pb-8">
         <p>
           © {new Date().getFullYear()} PayGo System. Architected & Engineered by{' '}
           <a
@@ -151,12 +152,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </a>{' '}
           (<a href="https://github.com/Telzeez" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub ↗</a> • <a href="https://https://www.linkedin.com/in/abdlazeezolasunkanmi/" target="_blank" rel="noopener noreferrer" className="hover:underline">LinkedIn ↗</a>).
         </p>
-      </footer>
+      </footer>}
 
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
+      {!isOnboarding && <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
         <ul className="flex justify-around items-center px-1 py-2 max-w-lg mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Recharge', 'Profile'].includes(item.label) || (item.label === 'Seller' && user?.isSeller)).map((item) => {
+          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Recharge', 'Profile'].includes(item.label)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
@@ -176,7 +177,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </ul>
-      </nav>
+      </nav>}
     </div>
   );
 }

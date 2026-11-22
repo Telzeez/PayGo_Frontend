@@ -98,8 +98,10 @@ function AuthPageContent() {
 
       setIsSubmitting(false);
       setIsSuccess(true);
+      // Existing users return to their requested page (or the marketplace).
+      // ProtectedRoute sends accounts without a buyer/seller capability to onboarding.
       const destination = isLogin
-        ? (redirect !== '/dashboard' ? '/onboarding?redirect=' + encodeURIComponent(redirect) : '/onboarding')
+        ? (redirect !== '/dashboard' ? redirect : '/marketplace')
         : '/onboarding';
       router.replace(destination);
     } catch (err: any) {
@@ -408,7 +410,8 @@ function AuthPageContent() {
                   try {
                     await loginWithGoogle(credentialResponse.credential);
                     setIsSuccess(true);
-                    router.replace('/onboarding');
+                    // ProtectedRoute handles first-time capability setup only when needed.
+                    router.replace('/marketplace');
                   } catch (googleError: any) {
                     setError(googleError?.message || 'Google sign-in failed. Please try again.');
                   } finally {

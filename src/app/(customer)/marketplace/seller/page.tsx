@@ -126,7 +126,7 @@ export default function SellerMarketplacePage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       const response = await marketplaceApi.createSource({
-        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy ?? undefined, ts: locationTimestamp ?? undefined,
+        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy as number, ts: locationTimestamp as number,
         serviceRadiusMeters: parseInt(serviceRadius, 10),
       });
       if (response.success) {

@@ -12,7 +12,7 @@ export interface NearbyListing {
   effectiveRadiusMeters: number;
   availableKwh: number;
   pricePerKwh: number;
-  status: 'ACTIVE' | 'PAUSED' | 'SOLD_OUT';
+  status: 'ACTIVE' | 'PAUSED' | 'SOLD_OUT' | 'REVOKED';
   deviceStatus: 'ONLINE' | 'OFFLINE';
   lastSeenAt?: string;
   sourceLatitude: number;
@@ -43,7 +43,7 @@ export interface SellerListing {
   availableKwh: number;
   reservedKwh: number;
   pricePerKwh: number;
-  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'SOLD_OUT' | 'EXPIRED';
+  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'SOLD_OUT' | 'EXPIRED' | 'REVOKED';
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -90,6 +90,7 @@ export const marketplaceApi = {
     name: string;
     latitude: number;
     longitude: number;
+    accuracy: number;
     serviceRadiusMeters?: number;
   }) => {
     return apiClient<{ success: boolean; message: string; source: SellerSource }>('/api/marketplace/sources', {
@@ -105,6 +106,21 @@ export const marketplaceApi = {
       requireAuth: true,
     });
   },
+
+  updateSourceLocation: async (sourceId: number, data: { latitude: number; longitude: number; accuracy: number; ts: number }) =>
+    apiClient<{ success: boolean; message: string; distanceMeters: number }>(`/api/marketplace/sources/${sourceId}/location`, {
+      method: 'PUT', body: JSON.stringify(data), requireAuth: true,
+    }),
+
+  revokeSource: async (sourceId: number) =>
+    apiClient<{ success: boolean; message: string }>(`/api/marketplace/sources/${sourceId}/revoke`, {
+      method: 'POST', requireAuth: true,
+    }),
+
+  relistSource: async (sourceId: number, data: { latitude: number; longitude: number; accuracy: number; ts: number }) =>
+    apiClient<{ success: boolean; message: string }>(`/api/marketplace/sources/${sourceId}/relist`, {
+      method: 'POST', body: JSON.stringify(data), requireAuth: true,
+    }),
 
   // Seller Listing CRUD
   createListing: async (data: {

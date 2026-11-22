@@ -12,7 +12,18 @@ export default function ProfilePage() {
   const { selectedDeviceId, loadingDevices, refreshDevices } = useDevices();
   const [device, setDevice] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusClock, setStatusClock] = useState(0);
   const hasMeter = Boolean(selectedDeviceId && device);
+  const lastSeenMs = device?.lastSeenAt ? new Date(device.lastSeenAt).getTime() : 0;
+  const meterIsOnline = Boolean(
+    device?.status === 'ONLINE' && lastSeenMs > 0 && statusClock > 0 && statusClock - lastSeenMs <= 12000
+  );
+
+  useEffect(() => {
+    setStatusClock(Date.now());
+    const interval = window.setInterval(() => setStatusClock(Date.now()), 3000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   // Edit Modal State
   const [isEditing, setIsEditing] = useState(false);
@@ -190,12 +201,12 @@ export default function ProfilePage() {
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">Assigned Meter Details</h2>
           {device && (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-              device.status === 'ONLINE'
+              meterIsOnline
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
                 : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${device.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
-              Meter {device.status}
+              <span className={`w-1.5 h-1.5 rounded-full ${meterIsOnline ? 'bg-emerald-500' : 'bg-zinc-400'}`}></span>
+              Meter {meterIsOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           )}
         </div>

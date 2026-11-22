@@ -1,15 +1,15 @@
-import { clearFirebaseSession, getFirebaseIdToken, hasPendingSignup } from '../firebase/auth';
+import { getFirebaseIdToken } from '../firebase/auth';
 
 function getBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!envUrl) {
     return typeof window !== 'undefined'
       ? ''
-      : (process.env.API_URL || 'https://paygo-backend-6w4q.onrender.com').trim().replace(/\/+$/, '').replace(/\/api$/, '');
+      : (process.env.API_URL || 'https://paygo-backend-6w4q.onrender.com').trim().replace(/\\/+$/, '').replace(/\\/api$/, '');
   }
 
   // Remove trailing slashes and trailing /api to prevent duplicate /api segments
-  let sanitized = envUrl.trim().replace(/\/+$/, '');
+  let sanitized = envUrl.trim().replace(/\\/+$/, '');
   if (sanitized.endsWith('/api')) {
     sanitized = sanitized.slice(0, -4);
   }
@@ -95,15 +95,9 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
     return data as T;
   } catch (error) {
     if (error instanceof ApiError) {
-      if (
-        error.status === 403 &&
-        error.data?.code === 'PAYGO_PROFILE_NOT_LINKED' &&
-        !hasPendingSignup() &&
-        typeof window !== 'undefined'
-      ) {
-        clearFirebaseSession();
-        window.dispatchEvent(new Event('paygo:profile-missing'));
-      }
+      // Leave authentication/session recovery to AuthContext. In particular,
+      // Google sign-up must retain its Firebase token after /auth/me reports
+      // PAYGO_PROFILE_NOT_LINKED so it can call /auth/sync.
       throw error;
     }
     // Network or parsing errors

@@ -12,6 +12,7 @@ export default function AdminDashboardPage() {
   const [provisionDeviceId, setProvisionDeviceId] = useState('');
   const [provisionOwnerId, setProvisionOwnerId] = useState('');
   const [meterPurpose, setMeterPurpose] = useState<'GENERATION' | 'RECEIVING'>('GENERATION');
+  const [provisionConnectionId, setProvisionConnectionId] = useState('');
   const [provisioning, setProvisioning] = useState(false);
   const [provisionMessage, setProvisionMessage] = useState('');
   const [provisionError, setProvisionError] = useState('');
@@ -49,7 +50,8 @@ export default function AdminDashboardPage() {
       const response = await devicesApi.provisionMeter(
         provisionDeviceId.trim(),
         Number(provisionOwnerId),
-        meterPurpose
+        meterPurpose,
+        meterPurpose === 'RECEIVING' ? Number(provisionConnectionId) : undefined
       );
       if (!response.activationEmailSent) {
         setProvisionError(response.message || 'The meter was assigned, but the activation email was not sent. Verify email configuration and arrange a secure code resend before asking the user to activate.');
@@ -58,6 +60,7 @@ export default function AdminDashboardPage() {
       setProvisionMessage(response.message || 'Meter provisioned and activation email sent.');
       setProvisionDeviceId('');
       setProvisionOwnerId('');
+      setProvisionConnectionId('');
     } catch (error: any) {
       setProvisionError(error.message || 'Unable to provision this meter.');
     } finally {
@@ -163,6 +166,12 @@ export default function AdminDashboardPage() {
               <option value="RECEIVING">Buyer receiving meter</option>
             </select>
           </div>
+          {meterPurpose === 'RECEIVING' && (
+            <div>
+              <label htmlFor="provision-connection" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Approved connection ID</label>
+              <input id="provision-connection" type="number" min="1" step="1" value={provisionConnectionId} onChange={(event) => setProvisionConnectionId(event.target.value)} disabled={provisioning} required placeholder="Connection ID from the approved request" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            </div>
+          )}
           <div className="flex items-end">
             <button type="submit" disabled={provisioning} className="w-full rounded-xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-zinc-950 disabled:opacity-50">{provisioning ? 'Assigning meter…' : 'Assign meter and email code'}</button>
           </div>

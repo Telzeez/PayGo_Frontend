@@ -427,8 +427,6 @@ function AuthPageContent() {
               </>
             )}
           </form>
-          {isLogin && !registrationToken && (
-          )}
         </div>
       )}
     </AuthLayout>

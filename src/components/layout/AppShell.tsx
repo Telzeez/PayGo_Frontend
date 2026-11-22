@@ -161,10 +161,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
-              <li key={item.path}>
+              <li key={item.path} className="flex-1 min-w-0">
                 <Link
                   href={item.path}
-                  className={`flex flex-col items-center px-2 py-2 transition-colors min-w-0 flex-1 ${
+                  className={`w-full flex flex-col items-center px-1 py-2 transition-colors min-w-0 ${
                     isActive 
                       ? 'text-zinc-900 dark:text-white font-semibold' 
                       : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'

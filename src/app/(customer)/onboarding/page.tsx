@@ -27,11 +27,11 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-[#09090B] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-8">
+    <div className="min-h-[calc(100dvh-5rem)] w-full bg-zinc-50 dark:bg-[#09090B] flex flex-col items-center justify-center px-3 py-6 sm:p-6">
+      <div className="w-full max-w-md min-w-0 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5 sm:p-8">
         <div className="text-center mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600 mb-3">PAYGO ACCOUNT SETUP</p>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">Welcome to PayGo{user?.email ? ', ' + user.email.split('@')[0] : ''}!</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-2 break-words [overflow-wrap:anywhere]">Welcome to PayGo{user?.email ? ', ' + user.email.split('@')[0] : ''}!</h1>
           <p className="text-zinc-600 dark:text-zinc-400">Choose a capability to add or confirm for this account.</p>
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Currently enabled: {user?.isBuyer && user?.isSeller ? 'Buyer and Seller' : user?.isBuyer ? 'Buyer' : user?.isSeller ? 'Seller' : 'Not selected'}. Selecting the other option adds it; it will not remove your existing access.</p>
         </div>
@@ -39,7 +39,7 @@ export default function OnboardingPage() {
           <button type="button" onClick={() => continueAs('BUYER')} disabled={saving}
             className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all text-left group disabled:opacity-60">
             <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"><Home className="w-6 h-6" /></div>
-            <div><div className="font-semibold text-zinc-900 dark:text-white mb-1">Buy Energy</div><div className="text-sm text-zinc-500 dark:text-zinc-400">Find nearby solar energy and purchase what you need.</div></div>
+            <div className="min-w-0"><div className="font-semibold text-zinc-900 dark:text-white mb-1">Buy Energy</div><div className="text-sm text-zinc-500 dark:text-zinc-400">Find nearby solar energy and purchase what you need.</div></div>
           </button>
           <button type="button" onClick={() => continueAs('SELLER')} disabled={saving}
             className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all text-left group disabled:opacity-60">

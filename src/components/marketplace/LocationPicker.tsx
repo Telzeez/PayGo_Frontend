@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+type SearchResult = {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+};
+
 type Props = {
   latitude: number;
   longitude: number;
@@ -24,6 +31,10 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
   const onChangeRef = useRef(onChange);
   const [place, setPlace] = useState("Finding the selected place…");
   const [mapReady, setMapReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
@@ -74,30 +85,112 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
       setMapReady(true);
     };
     load().catch(() => setPlace("Map could not load. Check your internet connection and try again."));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+        marker.current = null;
+      }
+    };
   }, []);
 
+  // Reverse-geocode after the user finishes moving the pin, rather than on every map movement.
   useEffect(() => {
-    if (map.current && marker.current) {
-      marker.current.setLatLng([latitude, longitude]);
-      map.current.setView([latitude, longitude], Math.max(map.current.getZoom(), 16));
-    }
     let active = true;
-    setPlace("Finding the selected place…");
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`)
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => {
-        if (!active) return;
-        const a = data.address || {};
-        const exact = [a.house_number, a.road || a.pedestrian || a.residential, a.neighbourhood || a.suburb || a.village || a.town || a.city_district, a.city || a.town || a.city_district, a.state].filter(Boolean);
-        setPlace(exact.length ? [...new Set(exact)].join(", ") : data.display_name || "Selected map location");
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setPlace("Finding the selected place…");
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, {
+        signal: controller.signal,
       })
-      .catch(() => { if (active) setPlace("Selected map pin"); });
-    return () => { active = false; };
+        .then((response) => response.ok ? response.json() : Promise.reject())
+        .then((data) => {
+          if (!active) return;
+          const a = data.address || {};
+          const exact = [a.house_number, a.road || a.pedestrian || a.residential, a.neighbourhood || a.suburb || a.village || a.town || a.city_district, a.city || a.town || a.city_district, a.state].filter(Boolean);
+          setPlace(exact.length ? [...new Set(exact)].join(", ") : data.display_name || "Selected map location");
+        })
+        .catch((error) => {
+          if (active && error.name !== "AbortError") setPlace("Selected map pin");
+        });
+    }, 700);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [latitude, longitude]);
+
+  const searchPlaces = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    setSearching(true);
+    setSearchError("");
+    setSearchResults([]);
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        format: "jsonv2",
+        addressdetails: "1",
+        limit: "5",
+        countrycodes: "ng",
+      });
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+      if (!response.ok) throw new Error("Place search is temporarily unavailable.");
+      const results = await response.json() as SearchResult[];
+      if (!results.length) {
+        setSearchError("No matching place found. Try adding the area, city or state.");
+      } else {
+        setSearchResults(results);
+      }
+    } catch (error: any) {
+      setSearchError(error.message || "Could not search for that place. Try again.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const selectSearchResult = (result: SearchResult) => {
+    const lat = Number(result.lat);
+    const lng = Number(result.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    setSearchQuery(result.display_name);
+    setSearchResults([]);
+    setSearchError("");
+    marker.current?.setLatLng([lat, lng]);
+    map.current?.setView([lat, lng], 18);
+    onChangeRef.current(lat, lng);
+  };
 
   return (
     <div className="space-y-3">
+      <form onSubmit={searchPlaces} className="space-y-2">
+        <label htmlFor="paygo-location-search" className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Search for your area or address</label>
+        <div className="flex gap-2">
+          <input
+            id="paygo-location-search"
+            value={searchQuery}
+            onChange={(event) => { setSearchQuery(event.target.value); setSearchResults([]); setSearchError(""); }}
+            placeholder="e.g. Bodija, Ibadan, Oyo State"
+            className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+          />
+          <button type="submit" disabled={searching || !searchQuery.trim()} className="rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+            {searching ? "Searching…" : "Search"}
+          </button>
+        </div>
+        {searchError && <p role="status" className="text-xs text-amber-700 dark:text-amber-400">{searchError}</p>}
+        {searchResults.length > 0 && (
+          <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+            {searchResults.map((result) => (
+              <button key={result.place_id} type="button" onClick={() => selectSearchResult(result)} className="block w-full border-b border-zinc-100 px-3 py-2.5 text-left text-xs text-zinc-700 last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900">
+                {result.display_name}
+              </button>
+            ))}
+          </div>
+        )}
+      </form>
       <div ref={mapElement} className="h-72 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 dark:border-zinc-700" aria-label="Map for selecting your exact location" />
       {!mapReady && <p className="text-xs text-zinc-500">Loading map…</p>}
       <div className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-900">
@@ -105,7 +198,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
         <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">{place}</p>
         <p className="mt-1 font-mono text-[10px] text-zinc-500">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
       </div>
-      <p className="text-[11px] text-zinc-500">Drag the pin or tap the map to place it exactly at the premises. Zoom in for greater accuracy.</p>
+      <p className="text-[11px] text-zinc-500">GPS may be approximate, especially on desktop computers. Search for your area first, then zoom in and drag the pin or tap the map to mark the exact premises before confirming.</p>
     </div>
   );
 }

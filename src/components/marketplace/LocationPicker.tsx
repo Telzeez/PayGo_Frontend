@@ -114,7 +114,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
         .catch((error) => {
           if (active && error.name !== "AbortError") setPlace("Selected map pin");
         });
-    }, 700);
+    }, 1000);
     return () => {
       active = false;
       window.clearTimeout(timer);

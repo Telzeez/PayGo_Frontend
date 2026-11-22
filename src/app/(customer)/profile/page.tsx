@@ -52,7 +52,12 @@ export default function ProfilePage() {
       }
     };
 
-    if (!loadingDevices) fetchProfileData();
+    if (loadingDevices) return;
+
+    void fetchProfileData();
+    // Refresh the heartbeat while the profile is open so online/offline can recover live.
+    const interval = window.setInterval(() => { void fetchProfileData(); }, 5000);
+    return () => window.clearInterval(interval);
   }, [selectedDeviceId, loadingDevices]);
 
 

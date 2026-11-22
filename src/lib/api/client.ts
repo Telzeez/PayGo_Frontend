@@ -5,11 +5,11 @@ function getBaseUrl(): string {
   if (!envUrl) {
     return typeof window !== 'undefined'
       ? ''
-      : (process.env.API_URL || 'https://paygo-backend-6w4q.onrender.com').trim().replace(/\\/+$/, '').replace(/\\/api$/, '');
+      : (process.env.API_URL || 'https://paygo-backend-6w4q.onrender.com').trim().replace(/\/+$/, '').replace(/\/api$/, '');
   }
 
   // Remove trailing slashes and trailing /api to prevent duplicate /api segments
-  let sanitized = envUrl.trim().replace(/\\/+$/, '');
+  let sanitized = envUrl.trim().replace(/\/+$/, '');
   if (sanitized.endsWith('/api')) {
     sanitized = sanitized.slice(0, -4);
   }
@@ -47,7 +47,7 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   if (requireAuth) {
     const token = await getFirebaseIdToken();
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set('Authorization', \`Bearer \${token}\`);
     }
   }
 
@@ -57,7 +57,7 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   };
 
   const baseUrl = getBaseUrl();
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : \`/\${endpoint}\`;
 
   let url: string;
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
@@ -67,9 +67,9 @@ export async function apiClient<T>(endpoint: string, options: FetchOptions = {})
   } else {
     // Avoid double /api when endpoint already begins with /api
     if (baseUrl.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
-      url = `${baseUrl.slice(0, -4)}${cleanEndpoint}`;
+      url = \`\${baseUrl.slice(0, -4)}\${cleanEndpoint}\`;
     } else {
-      url = `${baseUrl}${cleanEndpoint}`;
+      url = \`\${baseUrl}\${cleanEndpoint}\`;
     }
   }
 

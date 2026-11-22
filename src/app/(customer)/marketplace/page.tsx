@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
 import { devicesApi } from '@/lib/api/devices';
+import { connectionsApi, CustomerConnection } from '@/lib/api/connections';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -37,6 +38,7 @@ export default function BuyerMarketplacePage() {
   const [purchasing, setPurchasing] = useState(false);
   const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
   const [buyerDeviceId, setBuyerDeviceId] = useState('');
+  const [customerConnections, setCustomerConnections] = useState<CustomerConnection[]>([]);
 
 
   // Request HTML5 Browser Location
@@ -140,6 +142,34 @@ export default function BuyerMarketplacePage() {
     return () => { active = false; };
   }, [user?.id]);
 
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setCustomerConnections([]);
+      return () => { active = false; };
+    }
+    connectionsApi.getMine().then((response) => {
+      if (active) setCustomerConnections(response.connections || []);
+    }).catch((error) => {
+      if (active) console.error('Unable to load connection approvals:', error);
+    });
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const getConnectionState = (sourceId: number) => {
+    const connection = customerConnections.find((item) =>
+      item.sourceId === sourceId && item.customerId === user?.id &&
+      item.status !== 'REJECTED' && item.status !== 'CANCELLED'
+    );
+    if (!connection) return 'NONE';
+    if (connection.status === 'PENDING') return 'PENDING';
+    if (connection.status === 'PENDING_REVISION') return 'PENDING_REVISION';
+    if (connection.status === 'APPROVED' && connection.receivingDeviceId &&
+        ownedMeters.some((meter) => meter.deviceId === connection.receivingDeviceId)) return 'ACTIVE';
+    if (connection.status === 'APPROVED' && connection.receivingDeviceId) return 'ACTIVATE_METER';
+    return 'METER_PENDING';
+  };
+
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
     if (!selectedListing || !user?.email || !buyerDeviceId || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
@@ -206,6 +236,12 @@ export default function BuyerMarketplacePage() {
           </div>
         </div>
 
+        <Link
+          href="/connections"
+          className="rounded-xl border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+        >
+          My connections
+        </Link>
         <Link
           href="/marketplace/seller"
           className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2 self-start sm:self-auto"
@@ -384,12 +420,25 @@ export default function BuyerMarketplacePage() {
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => setSelectedListing(item)}
-                        className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
-                      >
-                        Buy Energy
-                      </button>
+                      {getConnectionState(item.sourceId) === 'ACTIVE' ? (
+                        <button
+                          onClick={() => setSelectedListing(item)}
+                          className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-zinc-800 dark:hover:bg-white transition-all shadow-sm active:scale-95"
+                        >
+                          Buy Energy
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}`}
+                          className="bg-amber-500 text-zinc-950 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-amber-400 transition-all shadow-sm text-center"
+                        >
+                          {getConnectionState(item.sourceId) === 'PENDING' ? 'Request pending' :
+                           getConnectionState(item.sourceId) === 'PENDING_REVISION' ? 'Review load request' :
+                           getConnectionState(item.sourceId) === 'METER_PENDING' ? 'Approved · meter pending' :
+                           getConnectionState(item.sourceId) === 'ACTIVATE_METER' ? 'Activate meter' :
+                           'Request connection'}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}

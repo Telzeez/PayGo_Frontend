@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { devicesApi } from '@/lib/api/devices';
 import { marketplaceApi, SellerSource, SellerListing } from '@/lib/api/marketplace';
+import LocationPicker from '@/components/marketplace/LocationPicker';
 
 type AssignedMeter = { deviceId: string; assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED'; meterPurpose: 'GENERATION' | 'RECEIVING'; status: 'ONLINE' | 'OFFLINE' };
 
@@ -177,13 +178,13 @@ export default function SellerMarketplacePage() {
           </div>
           <div className="rounded-2xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Installation location</p>
-            <p className="mt-1 text-xs text-zinc-500">Stand at the location of the solar installation before requesting GPS.</p>
-            <button type="button" onClick={requestInstallationLocation} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Press to get installation location</button>
+            <p className="mt-1 text-xs text-zinc-500">Stand at the solar installation and detect its position, then adjust the pin to the exact premises.</p>
+            <button type="button" onClick={requestInstallationLocation} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Detect installation with GPS</button>
             {latitude !== null && longitude !== null && (
-              <div className="mt-3 rounded-xl bg-zinc-50 p-3 dark:bg-zinc-900">
-                <p className="font-mono text-xs text-zinc-700 dark:text-zinc-200">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
-                <button type="button" onClick={() => setLocationConfirmed(true)} className="mt-2 text-xs font-bold text-emerald-600">Confirm this installation location</button>
-                {locationConfirmed && <p className="mt-1 text-xs font-semibold text-emerald-600">Location confirmed</p>}
+              <div className="mt-3 space-y-3">
+                <LocationPicker latitude={latitude} longitude={longitude} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); setLocationConfirmed(false); }} />
+                <button type="button" onClick={() => setLocationConfirmed(true)} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white">Confirm this installation pin</button>
+                {locationConfirmed && <p className="text-xs font-semibold text-emerald-600">Installation location confirmed</p>}
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ import { paymentApi } from '@/lib/api/payment';
 import { devicesApi } from '@/lib/api/devices';
 import { connectionsApi, CustomerConnection } from '@/lib/api/connections';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
+import LocationPicker from '@/components/marketplace/LocationPicker';
 
 const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -290,14 +291,14 @@ export default function BuyerMarketplacePage() {
 
           {locationPendingConfirmation && latitude !== null && longitude !== null ? (
             <div className="max-w-md mx-auto rounded-2xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 p-4 text-left space-y-3">
-              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Location detected. Is this correct?</p>
-              <p className="font-mono text-sm text-zinc-900 dark:text-white">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
+              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Confirm your exact delivery location</p>
+              <LocationPicker latitude={latitude} longitude={longitude} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); }} />
               <div className="flex gap-2">
                 <button onClick={confirmLocation} disabled={loading} className="flex-1 rounded-xl bg-amber-500 px-4 py-3 text-xs font-bold text-zinc-950 disabled:opacity-60 flex items-center justify-center gap-2">
                   {loading && <span className="w-3.5 h-3.5 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin" />}
                   {loading ? 'Saving location…' : 'Confirm location'}
                 </button>
-                <button onClick={requestLocation} disabled={locating} className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-3 text-xs font-semibold disabled:opacity-50">Try again</button>
+                <button onClick={requestLocation} disabled={locating} className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-3 text-xs font-semibold disabled:opacity-50">Use GPS again</button>
               </div>
             </div>
           ) : (
@@ -337,7 +338,7 @@ export default function BuyerMarketplacePage() {
                   <div className="flex flex-col gap-2 mt-2">
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Confirmed coordinates: <strong className="text-zinc-900 dark:text-white">{latitude?.toFixed(4)}, {longitude?.toFixed(4)}</strong>
+                      Your confirmed delivery pin is being used for distance matching.
                     </p>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                       Adjust matching distance radius below to screen nearby solar generation sources.

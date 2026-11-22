@@ -44,7 +44,7 @@ export default function OnboardingPage() {
           <button type="button" onClick={() => continueAs('SELLER')} disabled={saving}
             className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-500/5 transition-all text-left group disabled:opacity-60">
             <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform"><Sun className="w-6 h-6" /></div>
-            <div><div className="font-semibold text-zinc-900 dark:text-white mb-1">Sell Energy</div><div className="text-sm text-zinc-500 dark:text-zinc-400">Set up your solar source and make surplus energy available nearby.</div></div>
+            <div className="min-w-0"><div className="font-semibold text-zinc-900 dark:text-white mb-1">Sell Energy</div><div className="text-sm text-zinc-500 dark:text-zinc-400">Set up your solar source and make surplus energy available nearby.</div></div>
           </button>
         </div>
         {saving && <p className="mt-4 text-center text-sm text-zinc-500">Saving your choice…</p>}

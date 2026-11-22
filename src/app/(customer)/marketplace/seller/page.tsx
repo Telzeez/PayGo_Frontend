@@ -161,6 +161,46 @@ export default function SellerMarketplacePage() {
     } catch (err: any) { setError(err.message || 'Unable to update this offer.'); }
   };
 
+  const captureAccurateLocation = () => new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('This browser does not support location access.'));
+    let watchId: number | null = null;
+    let wakeLock: any = null;
+    let settled = false;
+    const finish = async (error?: Error, position?: GeolocationPosition) => {
+      if (settled) return;
+      settled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timeout);
+      try { await wakeLock?.release(); } catch {}
+      setLocating(false);
+      if (error) reject(error); else if (position) resolve(position);
+    };
+    const timeout = window.setTimeout(() => void finish(new Error('Could not get a clear location. Move to an open area and try again.')), 30000);
+    setLocating(true);
+    (navigator as any).wakeLock?.request('screen').then((lock: any) => {
+      wakeLock = lock;
+      if (settled) void lock.release().catch(() => {});
+    }).catch(() => {});
+    watchId = navigator.geolocation.watchPosition(
+      (position) => { if (position.coords.accuracy <= 20) void finish(undefined, position); },
+      (error) => void finish(new Error(error.code === 1 ? 'Allow location access to verify that you are at your meter.' : 'Unable to get your location. Please try again.')),
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+    );
+  });
+
+  const handleVerifyLocation = async (listing: SellerListing) => {
+    setError(''); setSuccess('');
+    try {
+      const position = await captureAccurateLocation();
+      await marketplaceApi.updateSourceLocation(listing.energySourceId, {
+        latitude: position.coords.latitude, longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy, ts: position.timestamp,
+      });
+      setSuccess('Your meter location has been checked and updated.');
+      await fetchData();
+    } catch (err: any) { setError(err.message || 'Unable to verify your meter location.'); }
+  };
+
   const handleRevokeListing = async (listing: SellerListing) => {
     if (!window.confirm('Revoke this energy offer? Buyers will no longer see it or be able to purchase from it.')) return;
     setSaving(true); setError(''); setSuccess('');
@@ -176,10 +216,7 @@ export default function SellerMarketplacePage() {
     if (!navigator.geolocation) return setError('This browser does not support location access.');
     setSaving(true); setError(''); setSuccess('');
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 })
-      );
-      if (position.coords.accuracy > 20) throw new Error('Your location signal is not clear enough yet. Move to an open area and try again.');
+      const position = await captureAccurateLocation();
       await marketplaceApi.relistSource(listing.energySourceId, {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -290,7 +327,8 @@ export default function SellerMarketplacePage() {
               ) : (
                 <>
                   <button onClick={() => handleToggleListing(listing.id, listing.status)} disabled={saving} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
-                  <button onClick={() => handleRevokeListing(listing)} disabled={saving} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-50 dark:border-red-900">Revoke</button>
+                  <button onClick={() => handleVerifyLocation(listing)} disabled={locating || saving} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold disabled:opacity-50 dark:border-zinc-700">Verify location</button>
+                  <button onClick={() => handleRevokeListing(listing)} disabled={saving || locating} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-50 dark:border-red-900">Revoke</button>
                 </>
               )}
             </div>

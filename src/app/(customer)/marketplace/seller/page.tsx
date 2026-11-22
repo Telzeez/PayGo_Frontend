@@ -161,6 +161,38 @@ export default function SellerMarketplacePage() {
     } catch (err: any) { setError(err.message || 'Unable to update this offer.'); }
   };
 
+  const handleRevokeListing = async (listing: SellerListing) => {
+    if (!window.confirm('Revoke this energy offer? Buyers will no longer see it or be able to purchase from it.')) return;
+    setSaving(true); setError(''); setSuccess('');
+    try {
+      await marketplaceApi.revokeSource(listing.energySourceId);
+      setSuccess('Your offer has been revoked.');
+      await fetchData();
+    } catch (err: any) { setError(err.message || 'Unable to revoke this offer.'); }
+    finally { setSaving(false); }
+  };
+
+  const handleRelistListing = async (listing: SellerListing) => {
+    if (!navigator.geolocation) return setError('This browser does not support location access.');
+    setSaving(true); setError(''); setSuccess('');
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 })
+      );
+      if (position.coords.accuracy > 20) throw new Error('Your location signal is not clear enough yet. Move to an open area and try again.');
+      await marketplaceApi.relistSource(listing.energySourceId, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        ts: position.timestamp,
+      });
+      setSuccess('Your offer is active again.');
+      await fetchData();
+    } catch (err: any) {
+      setError(err.code === 1 ? 'Allow location access to verify that you are at your meter.' : err.message || 'Unable to relist this offer.');
+    } finally { setSaving(false); }
+  };
+
   const activatedMeters = meters.filter((meter) => meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'GENERATION');
 
   return (
@@ -252,7 +284,16 @@ export default function SellerMarketplacePage() {
         {loading ? <p className="text-sm text-zinc-500">Loading…</p> : listings.length === 0 ? <p className="text-sm text-zinc-500">You haven't published an offer yet.</p> : listings.map((listing) => (
           <div key={listing.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#121214]">
             <div><p className="text-sm font-bold text-zinc-900 dark:text-white">Offer #{listing.id}</p><p className="mt-1 text-xs text-zinc-500">{Number(listing.availableKwh).toFixed(1)} kWh · ₦{Number(listing.pricePerKwh).toLocaleString()}/kWh · {listing.status}</p></div>
-            <button onClick={() => handleToggleListing(listing.id, listing.status)} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
+            <div className="flex flex-wrap justify-end gap-2">
+              {listing.status === 'REVOKED' ? (
+                <button onClick={() => handleRelistListing(listing)} disabled={saving} className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 disabled:opacity-50">Verify & relist</button>
+              ) : (
+                <>
+                  <button onClick={() => handleToggleListing(listing.id, listing.status)} disabled={saving} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
+                  <button onClick={() => handleRevokeListing(listing)} disabled={saving} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-50 dark:border-red-900">Revoke</button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </section>

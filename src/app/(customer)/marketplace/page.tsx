@@ -85,7 +85,7 @@ export default function BuyerMarketplacePage() {
 
           setError(message);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
     } else {
       setLocating(false);

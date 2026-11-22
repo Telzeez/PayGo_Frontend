@@ -25,7 +25,12 @@ export class FirebaseAuthError extends Error {
 }
 
 function requireApiKey() {
-  if (!API_KEY) throw new FirebaseAuthError('Firebase is not configured. Check the NEXT_PUBLIC_FIREBASE_API_KEY setting.', 'CONFIGURATION_ERROR');
+  if (!API_KEY) {
+    throw new FirebaseAuthError(
+      'Sign-in is temporarily unavailable. Please try again later.',
+      'CONFIGURATION_ERROR'
+    );
+  }
 }
 
 async function requestFirebase<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
@@ -40,7 +45,7 @@ async function requestFirebase<T>(endpoint: string, body: Record<string, unknown
     });
   } catch {
     throw new FirebaseAuthError(
-      'Could not reach Firebase Authentication. Check your internet connection and try again.',
+      'We could not connect right now. Check your internet connection and try again.',
       'NETWORK_ERROR'
     );
   }
@@ -50,7 +55,7 @@ async function requestFirebase<T>(endpoint: string, body: Record<string, unknown
     data = await response.json();
   } catch {
     throw new FirebaseAuthError(
-      'Firebase returned an unreadable response. Check the Firebase project and API configuration.',
+      'Sign-in could not be completed right now. Please try again.',
       'INVALID_RESPONSE'
     );
   }
@@ -67,12 +72,15 @@ async function requestFirebase<T>(endpoint: string, body: Record<string, unknown
       TOO_MANY_ATTEMPTS_TRY_LATER: 'Too many attempts. Please wait and try again.',
       INVALID_OOB_CODE: 'This verification link is invalid, expired, or has already been used.',
       EXPIRED_OOB_CODE: 'This verification link has expired. Request a new one.',
-      OPERATION_NOT_ALLOWED: 'Email/password sign-in is not enabled in the Firebase project. Enable the Email/Password provider in Firebase Authentication.',
-      API_KEY_INVALID: 'The Firebase API key configured for this deployment is invalid. Check NEXT_PUBLIC_FIREBASE_API_KEY in Vercel.',
-      API_KEY_SERVICE_BLOCKED: 'The Firebase API key is blocked from using the Identity Toolkit API. Check its Google Cloud API restrictions.',
-      PROJECT_NOT_FOUND: 'Firebase could not find the project associated with this API key. Check the Vercel Firebase project configuration.',
+      OPERATION_NOT_ALLOWED: 'This sign-in option is temporarily unavailable. Please try another sign-in method or contact support.',
+      API_KEY_INVALID: 'Sign-in is temporarily unavailable. Please try again later.',
+      API_KEY_SERVICE_BLOCKED: 'Sign-in is temporarily unavailable. Please try again later.',
+      PROJECT_NOT_FOUND: 'Sign-in is temporarily unavailable. Please try again later.',
+      INVALID_IDP_RESPONSE: 'Google sign-in could not be completed. Please try again or use email and password.',
+      INVALID_RESPONSE: 'Sign-in could not be completed right now. Please try again.',
+      CONFIGURATION_ERROR: 'Sign-in is temporarily unavailable. Please try again later.',
     };
-    const message = messages[code] || `Firebase Authentication failed (code: ${code}). Check the Firebase project and API configuration.`;
+    const message = messages[code] || 'Sign-in could not be completed. Please check your details and try again.';
     throw new FirebaseAuthError(message, code);
   }
   return data as T;

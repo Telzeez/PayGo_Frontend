@@ -30,17 +30,36 @@ function requireApiKey() {
 
 async function requestFirebase<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
   requireApiKey();
-  const response = await fetch(`${AUTH_BASE}/${endpoint}?key=${API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await response.json();
+
+  let response: Response;
+  try {
+    response = await fetch(`${AUTH_BASE}/${endpoint}?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new FirebaseAuthError(
+      'Could not reach Firebase Authentication. Check your internet connection and try again.',
+      'NETWORK_ERROR'
+    );
+  }
+
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw new FirebaseAuthError(
+      'Firebase returned an unreadable response. Check the Firebase project and API configuration.',
+      'INVALID_RESPONSE'
+    );
+  }
+
   if (!response.ok) {
     const code = String(data?.error?.message || 'AUTH_ERROR');
     const messages: Record<string, string> = {
       EMAIL_EXISTS: 'An account with this email already exists. Sign in or use password reset.',
-      EMAIL_NOT_FOUND: 'No Firebase account was found for this email. Create an account first.',
+      EMAIL_NOT_FOUND: 'No Firebase account was found for this email. If this is an older PAYGO account, it may need to be linked to Firebase.',
       INVALID_PASSWORD: 'The email or password is incorrect.',
       INVALID_LOGIN_CREDENTIALS: 'The email or password is incorrect.',
       USER_DISABLED: 'This account has been disabled. Contact PAYGO support.',
@@ -48,9 +67,13 @@ async function requestFirebase<T>(endpoint: string, body: Record<string, unknown
       TOO_MANY_ATTEMPTS_TRY_LATER: 'Too many attempts. Please wait and try again.',
       INVALID_OOB_CODE: 'This verification link is invalid, expired, or has already been used.',
       EXPIRED_OOB_CODE: 'This verification link has expired. Request a new one.',
-      OPERATION_NOT_ALLOWED: 'This sign-in method is not enabled in Firebase Authentication.',
+      OPERATION_NOT_ALLOWED: 'Email/password sign-in is not enabled in the Firebase project. Enable the Email/Password provider in Firebase Authentication.',
+      API_KEY_INVALID: 'The Firebase API key configured for this deployment is invalid. Check NEXT_PUBLIC_FIREBASE_API_KEY in Vercel.',
+      API_KEY_SERVICE_BLOCKED: 'The Firebase API key is blocked from using the Identity Toolkit API. Check its Google Cloud API restrictions.',
+      PROJECT_NOT_FOUND: 'Firebase could not find the project associated with this API key. Check the Vercel Firebase project configuration.',
     };
-    throw new FirebaseAuthError(messages[code] || 'Firebase Authentication could not complete the request.', code);
+    const message = messages[code] || `Firebase Authentication failed (code: ${code}). Check the Firebase project and API configuration.`;
+    throw new FirebaseAuthError(message, code);
   }
   return data as T;
 }

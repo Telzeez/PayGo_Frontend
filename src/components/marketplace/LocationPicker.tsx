@@ -79,10 +79,14 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
       }).addTo(map.current);
       marker.current = L.marker([latitude, longitude], { draggable: true }).addTo(map.current);
       marker.current.on("dragend", () => {
+        if (accuracyCircle.current) { accuracyCircle.current.remove(); accuracyCircle.current = null; }
+        setGpsAccuracy(null);
         const point = marker.current.getLatLng();
         onChangeRef.current(point.lat, point.lng);
       });
       map.current.on("click", (event: any) => {
+        if (accuracyCircle.current) { accuracyCircle.current.remove(); accuracyCircle.current = null; }
+        setGpsAccuracy(null);
         marker.current.setLatLng(event.latlng);
         onChangeRef.current(event.latlng.lat, event.latlng.lng);
       });
@@ -203,6 +207,8 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
     setSearchQuery(result.display_name);
     setSearchResults([]);
     setSearchError("");
+    setGpsAccuracy(null);
+    if (accuracyCircle.current) { accuracyCircle.current.remove(); accuracyCircle.current = null; }
     marker.current?.setLatLng([lat, lng]);
     map.current?.setView([lat, lng], 18);
     onChangeRef.current(lat, lng);

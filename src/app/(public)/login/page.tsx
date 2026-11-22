@@ -408,10 +408,13 @@ function AuthPageContent() {
                   setIsSubmitting(true);
                   setError('');
                   try {
-                    await loginWithGoogle(credentialResponse.credential);
+                    const googleResult = await loginWithGoogle(
+                      credentialResponse.credential,
+                      isLogin ? undefined : role
+                    );
                     setIsSuccess(true);
-                    // ProtectedRoute handles first-time capability setup only when needed.
-                    router.replace('/marketplace');
+                    // New Google signups need to choose their PAYGO capability first.
+                    router.replace(googleResult?.needsRegistration ? '/onboarding' : '/marketplace');
                   } catch (googleError: any) {
                     setError(googleError?.message || 'Google sign-in failed. Please try again.');
                   } finally {

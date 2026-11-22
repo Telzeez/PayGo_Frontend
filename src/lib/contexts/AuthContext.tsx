@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (googleCredential: string, _role?: string) => {
+  const loginWithGoogle = async (googleCredential: string, role?: string) => {
     const session = await signInFirebaseWithGoogle(googleCredential);
     const account = await getFirebaseAccount(session.idToken);
     if (!account.emailVerified) {
@@ -157,6 +157,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user);
     } catch (error: any) {
       if (error?.status === 403 && error?.data?.code === 'PAYGO_PROFILE_NOT_LINKED') {
+        // Only the explicit Sign Up flow may create a new PAYGO profile.
+        // A normal login must not silently recreate a profile that was deleted.
+        if (role === 'BUYER' || role === 'OWNER') {
+          await syncProfile(undefined, role);
+          return { needsRegistration: true };
+        }
         clearFirebaseSession();
         throw new Error('Your PAYGO profile was not found. Your session has been cleared. Please create a new PAYGO account.');
       }

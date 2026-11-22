@@ -104,7 +104,7 @@ function AuthPageContent() {
       router.replace(destination);
     } catch (err: any) {
       if (isLogin && err?.code === 'EMAIL_NOT_FOUND') {
-        setError('Your existing PAYGO profile needs to be connected to Firebase. Select Sign Up and use the same email address to activate your account. Your existing PAYGO records and permissions will be preserved.');
+        setError('No account was found with that email. Check the address or create an account.');
       } else {
         setError(err.message || 'Authentication failed. Please check your details.');
       }

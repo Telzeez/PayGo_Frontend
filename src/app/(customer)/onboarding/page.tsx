@@ -31,7 +31,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-md min-w-0 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-5 sm:p-8">
         <div className="text-center mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600 mb-3">PAYGO ACCOUNT SETUP</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-2 break-words [overflow-wrap:anywhere]">Welcome to PayGo{user?.email ? ', ' + user.email.split('@')[0] : ''}!</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white mb-2">Welcome to PayGo!</h1>
           <p className="text-zinc-600 dark:text-zinc-400">Choose a capability to add or confirm for this account.</p>
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Currently enabled: {user?.isBuyer && user?.isSeller ? 'Buyer and Seller' : user?.isBuyer ? 'Buyer' : user?.isSeller ? 'Seller' : 'Not selected'}. Selecting the other option adds it; it will not remove your existing access.</p>
         </div>

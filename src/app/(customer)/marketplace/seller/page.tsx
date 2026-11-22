@@ -18,6 +18,7 @@ export default function SellerMarketplacePage() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [locationTimestamp, setLocationTimestamp] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
   const [serviceRadius, setServiceRadius] = useState('500');
   const [availableKwh, setAvailableKwh] = useState('10');
@@ -70,6 +71,7 @@ export default function SellerMarketplacePage() {
     setLatitude(null);
     setLongitude(null);
     setLocationAccuracy(null);
+    setLocationTimestamp(null);
     if (!navigator.geolocation) {
       setError('This browser does not support location access. Please use a supported device/browser.');
       return;
@@ -99,6 +101,7 @@ export default function SellerMarketplacePage() {
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
         setLocationAccuracy(position.coords.accuracy);
+        setLocationTimestamp(position.timestamp);
         setLocationConfirmed(false);
         await stop();
       },
@@ -123,7 +126,7 @@ export default function SellerMarketplacePage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       const response = await marketplaceApi.createSource({
-        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy ?? undefined,
+        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy ?? undefined, ts: locationTimestamp ?? undefined,
         serviceRadiusMeters: parseInt(serviceRadius, 10),
       });
       if (response.success) {

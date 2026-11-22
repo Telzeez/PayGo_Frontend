@@ -139,7 +139,10 @@ export default function SellerMarketplacePage() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Sell your surplus energy</h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Complete your installation details and publish an offer for nearby buyers.</p>
         </div>
-        <Link href="/marketplace" className="rounded-xl bg-amber-500 px-4 py-2.5 text-center text-xs font-bold text-zinc-950">Find energy as a buyer</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/connections" className="rounded-xl border border-zinc-200 px-4 py-2.5 text-center text-xs font-bold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">Manage capacity & connections</Link>
+          <Link href="/marketplace" className="rounded-xl bg-amber-500 px-4 py-2.5 text-center text-xs font-bold text-zinc-950">Find energy as a buyer</Link>
+        </div>
       </div>
 
       {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">{error}</div>}

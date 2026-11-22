@@ -212,8 +212,6 @@ function MarketplaceContent() {
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
         buyerDeviceId,
-        buyerLatitude: latitude,
-        buyerLongitude: longitude,
       });
 
       if (!intentRes.success || !intentRes.purchase) {

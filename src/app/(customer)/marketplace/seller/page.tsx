@@ -17,6 +17,9 @@ export default function SellerMarketplacePage() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [locationTimestamp, setLocationTimestamp] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
   const [serviceRadius, setServiceRadius] = useState('500');
   const [availableKwh, setAvailableKwh] = useState('10');
   const [pricePerKwh, setPricePerKwh] = useState('250');
@@ -67,20 +70,50 @@ export default function SellerMarketplacePage() {
     setLocationConfirmed(false);
     setLatitude(null);
     setLongitude(null);
+    setLocationAccuracy(null);
+    setLocationTimestamp(null);
     if (!navigator.geolocation) {
       setError('This browser does not support location access. Please use a supported device/browser.');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    setLocating(true);
+    let watchId: number | null = null;
+    let wakeLock: any = null;
+    let finished = false;
+    const finish = async () => {
+      if (finished) return;
+      finished = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      try { await wakeLock?.release(); } catch {}
+      setLocating(false);
+    };
+    const timeout = window.setTimeout(() => {
+      void finish();
+      setError('We could not get a clear reading yet. Move closer to an open area and try again.');
+    }, 30000);
+    const stop = async () => { window.clearTimeout(timeout); await finish(); };
+    (navigator as any).wakeLock?.request('screen').then((lock: any) => { wakeLock = lock; }).catch(() => {});
+    watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        // Ignore weak fixes; keep watching until a reading within 20 m is available.
+        if (position.coords.accuracy > 20) return;
+        window.clearTimeout(timeout);
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
+        setLocationAccuracy(position.coords.accuracy);
+        setLocationTimestamp(position.timestamp);
         setLocationConfirmed(false);
+        await stop();
       },
-      (geoError) => { setLatitude(null); setLongitude(null); setLocationConfirmed(false); setError(geoError.code === 1
-        ? 'Location permission was denied. Enable it in your browser settings and try again.'
-        : 'Unable to detect the installation location. Please try again.'); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      async (geoError) => {
+        await stop();
+        setError(geoError.code === 1
+          ? 'Location permission was denied. Allow location access in your browser settings and try again.'
+          : geoError.code === 3
+            ? 'Getting your location took too long. Move somewhere with a clearer signal and try again.'
+            : 'We could not determine your location. Check your device location settings and try again.');
+      },
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
   };
 
@@ -93,7 +126,7 @@ export default function SellerMarketplacePage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       const response = await marketplaceApi.createSource({
-        deviceId, name: deviceName, latitude, longitude,
+        deviceId, name: deviceName, latitude, longitude, accuracy: locationAccuracy as number, ts: locationTimestamp as number,
         serviceRadiusMeters: parseInt(serviceRadius, 10),
       });
       if (response.success) {
@@ -129,6 +162,75 @@ export default function SellerMarketplacePage() {
       await marketplaceApi.toggleListingStatus(listingId, status === 'ACTIVE' ? 'pause' : 'activate');
       await fetchData();
     } catch (err: any) { setError(err.message || 'Unable to update this offer.'); }
+  };
+
+  const captureAccurateLocation = () => new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('This browser does not support location access.'));
+    let watchId: number | null = null;
+    let wakeLock: any = null;
+    let settled = false;
+    const finish = async (error?: Error, position?: GeolocationPosition) => {
+      if (settled) return;
+      settled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timeout);
+      try { await wakeLock?.release(); } catch {}
+      setLocating(false);
+      if (error) reject(error); else if (position) resolve(position);
+    };
+    const timeout = window.setTimeout(() => void finish(new Error('Could not get a clear location. Move to an open area and try again.')), 30000);
+    setLocating(true);
+    (navigator as any).wakeLock?.request('screen').then((lock: any) => {
+      wakeLock = lock;
+      if (settled) void lock.release().catch(() => {});
+    }).catch(() => {});
+    watchId = navigator.geolocation.watchPosition(
+      (position) => { if (position.coords.accuracy <= 20) void finish(undefined, position); },
+      (error) => void finish(new Error(error.code === 1 ? 'Allow location access to verify that you are at your meter.' : 'Unable to get your location. Please try again.')),
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+    );
+  });
+
+  const handleVerifyLocation = async (listing: SellerListing) => {
+    setError(''); setSuccess('');
+    try {
+      const position = await captureAccurateLocation();
+      await marketplaceApi.updateSourceLocation(listing.energySourceId, {
+        latitude: position.coords.latitude, longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy, ts: position.timestamp,
+      });
+      setSuccess('Your meter location has been checked and updated.');
+      await fetchData();
+    } catch (err: any) { setError(err.message || 'Unable to verify your meter location.'); }
+  };
+
+  const handleRevokeListing = async (listing: SellerListing) => {
+    if (!window.confirm('Revoke this energy offer? Buyers will no longer see it or be able to purchase from it.')) return;
+    setSaving(true); setError(''); setSuccess('');
+    try {
+      await marketplaceApi.revokeSource(listing.energySourceId);
+      setSuccess('Your offer has been revoked.');
+      await fetchData();
+    } catch (err: any) { setError(err.message || 'Unable to revoke this offer.'); }
+    finally { setSaving(false); }
+  };
+
+  const handleRelistListing = async (listing: SellerListing) => {
+    if (!navigator.geolocation) return setError('This browser does not support location access.');
+    setSaving(true); setError(''); setSuccess('');
+    try {
+      const position = await captureAccurateLocation();
+      await marketplaceApi.relistSource(listing.energySourceId, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        ts: position.timestamp,
+      });
+      setSuccess('Your offer is active again.');
+      await fetchData();
+    } catch (err: any) {
+      setError(err.code === 1 ? 'Allow location access to verify that you are at your meter.' : err.message || 'Unable to relist this offer.');
+    } finally { setSaving(false); }
   };
 
   const activatedMeters = meters.filter((meter) => meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'GENERATION');
@@ -179,10 +281,12 @@ export default function SellerMarketplacePage() {
           <div className="rounded-2xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
             <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Installation location</p>
             <p className="mt-1 text-xs text-zinc-500">Stand at the solar installation and detect its position, then adjust the pin to the exact premises.</p>
-            <button type="button" onClick={requestInstallationLocation} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Detect installation with GPS</button>
+            <button type="button" onClick={requestInstallationLocation} disabled={locating} aria-busy={locating} className="mt-3 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900">{locating ? 'Finding a clear location…' : 'Use my current location'}</button>
+            {locating && <p role="status" aria-live="polite" className="mt-2 text-xs text-amber-600">Keep this screen open. We are waiting for a clear reading (within 20 metres).</p>}
             {latitude !== null && longitude !== null && (
               <div className="mt-3 space-y-3">
                 <LocationPicker latitude={latitude} longitude={longitude} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); setLocationConfirmed(false); }} />
+                {locationAccuracy !== null && <p className="text-xs text-zinc-500">Location reading: within {Math.round(locationAccuracy)} metres.</p>}
                 <button type="button" onClick={() => setLocationConfirmed(true)} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white">Confirm this installation pin</button>
                 {locationConfirmed && <p className="text-xs font-semibold text-emerald-600">Installation location confirmed</p>}
               </div>
@@ -220,7 +324,17 @@ export default function SellerMarketplacePage() {
         {loading ? <p className="text-sm text-zinc-500">Loading…</p> : listings.length === 0 ? <p className="text-sm text-zinc-500">You haven't published an offer yet.</p> : listings.map((listing) => (
           <div key={listing.id} className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#121214]">
             <div><p className="text-sm font-bold text-zinc-900 dark:text-white">Offer #{listing.id}</p><p className="mt-1 text-xs text-zinc-500">{Number(listing.availableKwh).toFixed(1)} kWh · ₦{Number(listing.pricePerKwh).toLocaleString()}/kWh · {listing.status}</p></div>
-            <button onClick={() => handleToggleListing(listing.id, listing.status)} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
+            <div className="flex flex-wrap justify-end gap-2">
+              {listing.status === 'REVOKED' ? (
+                <button onClick={() => handleRelistListing(listing)} disabled={saving} className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 disabled:opacity-50">Verify & relist</button>
+              ) : (
+                <>
+                  <button onClick={() => handleToggleListing(listing.id, listing.status)} disabled={saving} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold dark:border-zinc-700">{listing.status === 'ACTIVE' ? 'Pause' : 'Activate'}</button>
+                  <button onClick={() => handleVerifyLocation(listing)} disabled={locating || saving} className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-semibold disabled:opacity-50 dark:border-zinc-700">Verify location</button>
+                  <button onClick={() => handleRevokeListing(listing)} disabled={saving || locating} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-50 dark:border-red-900">Revoke</button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </section>

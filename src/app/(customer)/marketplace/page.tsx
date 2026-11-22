@@ -99,7 +99,6 @@ export default function BuyerMarketplacePage() {
     setLoading(true);
     setError('');
     try {
-      await marketplaceApi.saveBuyerLocation(latitude, longitude);
       setLocationGranted(true);
       setLocationPendingConfirmation(false);
       setLocationStatus('granted');
@@ -205,8 +204,6 @@ export default function BuyerMarketplacePage() {
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
         buyerDeviceId,
-        buyerLatitude: latitude,
-        buyerLongitude: longitude,
       });
 
       if (!intentRes.success || !intentRes.purchase) {

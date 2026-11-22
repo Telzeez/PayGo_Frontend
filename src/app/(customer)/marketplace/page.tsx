@@ -25,6 +25,7 @@ export default function BuyerMarketplacePage() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
+  const [locating, setLocating] = useState(false);
 
   // Search & Listings State
   const [radiusMeters, setRadiusMeters] = useState<number>(1000);
@@ -43,15 +44,21 @@ export default function BuyerMarketplacePage() {
 
   // Request HTML5 Browser Location
   const requestLocation = () => {
+    if (locating) return;
+
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      setLocating(true);
+      setError('');
       setLocationStatus('prompt');
       setLocationGranted(false);
       setLocationPendingConfirmation(false);
       setLatitude(null);
       setLongitude(null);
       setListings([]);
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          setLocating(false);
           setLatitude(position.coords.latitude);
           setLongitude(position.coords.longitude);
           setLocationPendingConfirmation(true);
@@ -59,21 +66,30 @@ export default function BuyerMarketplacePage() {
           setError('');
         },
         (err) => {
+          setLocating(false);
           setLatitude(null);
           setLongitude(null);
           setLocationGranted(false);
           setLocationPendingConfirmation(false);
           setListings([]);
-          setLocationStatus('denied');
-          setError(err.code === 1
-            ? 'Location permission was denied. Enable location access in your browser settings and try again.'
-            : 'We could not determine your location. Please try again.');
+          setLocationStatus(err.code === 1 ? 'denied' : 'unavailable');
+
+          const message = err.code === 1
+            ? 'Location permission was blocked. Allow location access for this site in your browser settings, then try again.'
+            : err.code === 2
+              ? 'Your device could not find its location. Turn on Location/GPS, check your connection, and try again.'
+              : err.code === 3
+                ? 'Getting your location took too long. Move somewhere with a clearer GPS signal and try again.'
+                : 'We could not determine your location. Check your device location settings and try again.';
+
+          setError(message);
         },
-        { timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     } else {
+      setLocating(false);
       setLocationStatus('unavailable');
-      setError('Your browser does not support location access. Please try another browser or device.');
+      setError('Location access is not supported by this browser. Try opening PayGo in Chrome or another supported browser.');
     }
   };
 
@@ -277,17 +293,30 @@ export default function BuyerMarketplacePage() {
               <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Location detected. Is this correct?</p>
               <p className="font-mono text-sm text-zinc-900 dark:text-white">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
               <div className="flex gap-2">
-                <button onClick={confirmLocation} className="flex-1 rounded-xl bg-amber-500 px-4 py-3 text-xs font-bold text-zinc-950">Confirm location</button>
-                <button onClick={requestLocation} className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-3 text-xs font-semibold">Try again</button>
+                <button onClick={confirmLocation} disabled={loading} className="flex-1 rounded-xl bg-amber-500 px-4 py-3 text-xs font-bold text-zinc-950 disabled:opacity-60 flex items-center justify-center gap-2">
+                  {loading && <span className="w-3.5 h-3.5 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin" />}
+                  {loading ? 'Saving location…' : 'Confirm location'}
+                </button>
+                <button onClick={requestLocation} disabled={locating} className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-3 text-xs font-semibold disabled:opacity-50">Try again</button>
               </div>
             </div>
           ) : (
             <button
               onClick={requestLocation}
-              className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2 mx-auto"
+              disabled={locating}
+              aria-busy={locating}
+              className="w-full sm:w-auto bg-amber-500 text-zinc-950 font-bold py-3.5 px-6 rounded-2xl shadow-sm hover:bg-amber-400 transition-all text-xs active:scale-95 flex items-center justify-center gap-2 mx-auto disabled:opacity-70 disabled:cursor-wait"
             >
-              <MapPinIcon className="w-4 h-4" /> Press to get my location
+              {locating
+                ? <span className="w-4 h-4 rounded-full border-2 border-zinc-950/30 border-t-zinc-950 animate-spin" />
+                : <MapPinIcon className="w-4 h-4" />}
+              {locating ? 'Getting your location…' : 'Press to get my location'}
             </button>
+            {locating && (
+              <p role="status" aria-live="polite" className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                Please wait while your device finds its location. This may take a few seconds.
+              </p>
+            )}
           )}
           <p className="text-[11px] text-zinc-400">Your location is requested only when you press the button. You can retry if it is inaccurate.</p>
         </section>

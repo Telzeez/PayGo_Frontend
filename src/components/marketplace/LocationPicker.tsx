@@ -35,6 +35,10 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [gpsError, setGpsError] = useState("");
+  const accuracyCircle = useRef<any>(null);
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
@@ -122,6 +126,46 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
     };
   }, [latitude, longitude]);
 
+  const getCurrentCoordinates = () => {
+    if (!navigator.geolocation) {
+      setGpsError("This browser does not support device location. Search for your area and position the pin manually.");
+      return;
+    }
+
+    setLocating(true);
+    setGpsError("");
+    setGpsAccuracy(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: lat, longitude: lng, accuracy } = position.coords;
+        setGpsAccuracy(accuracy);
+        setLocating(false);
+        marker.current?.setLatLng([lat, lng]);
+        map.current?.setView([lat, lng], 19);
+        if (map.current && window.L) {
+          if (accuracyCircle.current) accuracyCircle.current.remove();
+          accuracyCircle.current = window.L.circle([lat, lng], {
+            radius: accuracy,
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.12,
+            weight: 1,
+          }).addTo(map.current);
+        }
+        onChangeRef.current(lat, lng);
+      },
+      (error) => {
+        setLocating(false);
+        setGpsError(error.code === 1
+          ? "Location permission was denied. Allow location access in your browser settings, or search for your address instead."
+          : error.code === 2
+            ? "Your device could not determine its location. Turn on GPS/location services or search for your address."
+            : "Getting your location timed out. Try again outdoors or search for your address.");
+      },
+      { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
+    );
+  };
+
   const searchPlaces = async (event: React.FormEvent) => {
     event.preventDefault();
     const query = searchQuery.trim();
@@ -166,6 +210,17 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
 
   return (
     <div className="space-y-3">
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+        <button type="button" onClick={getCurrentCoordinates} disabled={locating} className="w-full rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60">
+          {locating ? "Getting your coordinates…" : "Use my current location"}
+        </button>
+        {gpsAccuracy !== null && (
+          <p className="mt-2 text-xs text-blue-900 dark:text-blue-200">
+            GPS estimate: ±{Math.round(gpsAccuracy)} metres. The blue circle shows the estimated accuracy area. Move the pin onto your exact premises if needed.
+          </p>
+        )}
+        {gpsError && <p role="status" className="mt-2 text-xs text-red-700 dark:text-red-300">{gpsError}</p>}
+      </div>
       <form onSubmit={searchPlaces} className="space-y-2">
         <label htmlFor="paygo-location-search" className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">Search for your area or address</label>
         <div className="flex gap-2">
@@ -198,7 +253,7 @@ export default function LocationPicker({ latitude, longitude, onChange }: Props)
         <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">{place}</p>
         <p className="mt-1 font-mono text-[10px] text-zinc-500">{latitude.toFixed(6)}, {longitude.toFixed(6)}</p>
       </div>
-      <p className="text-[11px] text-zinc-500">GPS may be approximate, especially on desktop computers. Search for your area first, then zoom in and drag the pin or tap the map to mark the exact premises before confirming.</p>
+      <p className="text-[11px] text-zinc-500">GPS accuracy depends on your device and surroundings. Use the current-location button for a fresh GPS estimate, or search for your area. Then zoom in and move the pin onto the exact premises before confirming.</p>
     </div>
   );
 }

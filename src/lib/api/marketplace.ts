@@ -85,6 +85,7 @@ export const marketplaceApi = {
     latitude: number;
     longitude: number;
     accuracy: number;
+    ts: number;
     serviceRadiusMeters?: number;
   }) => {
     return apiClient<{ success: boolean; message: string; source: SellerSource }>('/api/marketplace/sources', {

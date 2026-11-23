@@ -20,6 +20,7 @@ function AdminDashboardContent() {
   const [deviceApiKey, setDeviceApiKey] = useState('');
   const [rotatingApiKey, setRotatingApiKey] = useState(false);
   const [apiKeyMessage, setApiKeyMessage] = useState('');
+  const [apiKeyCopied, setApiKeyCopied] = useState(false);
 
   const DEVICE_ID = 'DEVICE-001';
 
@@ -72,6 +73,17 @@ function AdminDashboardContent() {
     }
   };
 
+
+  const handleCopyDeviceApiKey = async () => {
+    try {
+      await navigator.clipboard.writeText(deviceApiKey);
+      setApiKeyCopied(true);
+      window.setTimeout(() => setApiKeyCopied(false), 2000);
+    } catch {
+      setApiKeyCopied(false);
+      setApiKeyMessage('Unable to copy automatically. Select and copy the key manually.');
+    }
+  };
 
   const handleRotateDeviceApiKey = async () => {
     if (!window.confirm('Rotate the API key for DEVICE-001? The currently flashed firmware will stop authenticating until you update its local DeviceConfig.h and reflash it.')) return;
@@ -142,7 +154,13 @@ function AdminDashboardContent() {
           <div className="mt-4 rounded-xl border border-amber-300 bg-white p-3 dark:border-amber-500/30 dark:bg-zinc-950">
             <p className="text-xs font-bold text-red-600 dark:text-red-400">Copy this key now. It will not be shown again.</p>
             <code className="mt-2 block break-all rounded-lg bg-zinc-100 p-3 text-xs text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">{deviceApiKey}</code>
-            <button type="button" onClick={() => navigator.clipboard.writeText(deviceApiKey)} className="mt-3 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold dark:border-zinc-700">Copy key</button>
+            <button
+              type="button"
+              onClick={handleCopyDeviceApiKey}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 shadow-sm transition-all duration-150 hover:border-zinc-400 hover:bg-zinc-50 hover:shadow active:scale-[0.98] active:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:active:bg-zinc-700 dark:focus-visible:ring-offset-zinc-950"
+            >
+              {apiKeyCopied ? 'Copied!' : 'Copy key'}
+            </button>
             <p className="mt-2 text-xs text-zinc-500">Paste it into the local <code>DeviceConfig.h</code> as <code>PAYGO_DEVICE_API_KEY</code>, then reflash the ESP32. Do not commit or share that file.</p>
           </div>
         )}

@@ -5,6 +5,7 @@ import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { MailCheck } from 'lucide-react';
 
 // Main page component with Suspense boundary
 export default function AuthPage() {
@@ -49,6 +50,7 @@ function AuthPageContent() {
   const [isResending, setIsResending] = useState(false);
   const [resendFeedback, setResendFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [resetFeedback, setResetFeedback] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [registrationNotice] = useState(searchParams.get('registered') === '1');
 
   const { login, loginWithGoogle, register, registerGoogle, resendVerification, sendPasswordReset } = useAuth();
@@ -124,7 +126,21 @@ function AuthPageContent() {
       title={isLogin ? "Welcome Back" : "Create Account"}
       subtitle={isLogin ? "Sign in to your PayGo account" : "Join PayGo today"}
     >
-      {verificationPending ? (
+      {resetSent ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-300">
+          <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+            <MailCheck className="h-10 w-10" strokeWidth={1.8} aria-hidden="true" />
+          </div>
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Check your email</h2>
+          <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            If an account exists for <strong className="break-all text-zinc-900 dark:text-zinc-100">{email.trim()}</strong>, we’ve sent a password reset link. Open your inbox and follow the instructions to choose a new password.
+          </p>
+          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">Don’t see it? Check your spam or junk folder.</p>
+          <button type="button" onClick={() => { setResetSent(false); setResetFeedback(''); }} className="mt-6 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+            Back to sign in
+          </button>
+        </div>
+      ) : verificationPending ? (
         <div className="space-y-4 py-6 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 text-2xl">✉</div>
           <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Check your inbox</h2>
@@ -365,13 +381,14 @@ function AuthPageContent() {
                   type="button"
                   onClick={async () => {
                     setResetFeedback('');
+                    setResetSent(false);
                     if (!email.trim()) {
                       setResetFeedback('Enter your email address first.');
                       return;
                     }
                     try {
                       await sendPasswordReset(email.trim());
-                      setResetFeedback('If a Firebase account exists for this address, a password reset email has been sent.');
+                      setResetSent(true);
                     } catch (resetError: any) {
                       setResetFeedback(resetError?.message || 'Could not request a password reset.');
                     }

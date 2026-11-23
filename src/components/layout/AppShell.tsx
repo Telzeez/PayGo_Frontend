@@ -93,9 +93,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         
         <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           {devices.length > 1 && (
-            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[112px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
-              {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
-            </select>
+            <div className="relative min-w-0 max-w-[132px] sm:max-w-[200px]">
+              <select
+                aria-label="Select meter"
+                value={selectedDeviceId || ''}
+                onChange={(event) => selectDevice(event.target.value)}
+                className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-2.5 pr-8 text-xs font-semibold text-zinc-800 shadow-sm outline-none transition-all hover:border-amber-400 hover:bg-amber-50/60 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-amber-500/60 dark:hover:bg-zinc-800"
+              >
+                {devices.map((device) => <option className="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100" key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
+              </select>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           )}
           {user?.isSeller && (
             <Link

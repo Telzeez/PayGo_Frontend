@@ -138,3 +138,8 @@ npm run start
 
 - **Backend API Server**: Node.js, Express, PostgreSQL, MQTT Broker ([`../backend`](file:///c:/Users/Telzeez/Desktop/SolarPayMe(SPM)/backend))
 - **System Documentation**: Specifications located in [`../files/`](file:///c:/Users/Telzeez/Desktop/SolarPayMe(SPM)/files)
+
+
+## Security maintenance
+
+The frontend pins Next.js and its matching ESLint configuration to the patched 16.4.6 release. Pull-request CI runs `npm audit --audit-level=moderate` and must pass before the security changes are merged.

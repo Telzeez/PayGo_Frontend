@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { reauthenticateFirebase } from '@/lib/firebase/auth';
@@ -26,7 +26,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
     }
   }, [isLoading, isAuthenticated, isAdmin, user, router, pathname]);
 
-  const handleReauthentication = async (event: FormEvent<HTMLFormElement>) => {
+  const handleReauthentication = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user?.email || !password || verifying) return;
 
@@ -68,7 +68,7 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
               <input
                 id="admin-email"
                 type="email"
-                value={user.email}
+                value={user?.email || ''}
                 readOnly
                 autoComplete="username"
                 className="w-full rounded-xl border border-zinc-200 bg-zinc-100 px-3 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"

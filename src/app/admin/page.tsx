@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse } from '@/lib/types';
 import Link from 'next/link';
+import AdminRoute from '@/components/auth/AdminRoute';
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -16,6 +17,9 @@ export default function AdminDashboardPage() {
   const [provisioning, setProvisioning] = useState(false);
   const [provisionMessage, setProvisionMessage] = useState('');
   const [provisionError, setProvisionError] = useState('');
+  const [deviceApiKey, setDeviceApiKey] = useState('');
+  const [rotatingApiKey, setRotatingApiKey] = useState(false);
+  const [apiKeyMessage, setApiKeyMessage] = useState('');
 
   const DEVICE_ID = 'DEVICE-001';
 
@@ -68,6 +72,23 @@ export default function AdminDashboardPage() {
     }
   };
 
+
+  const handleRotateDeviceApiKey = async () => {
+    if (!window.confirm('Rotate the API key for DEVICE-001? The currently flashed firmware will stop authenticating until you update its local DeviceConfig.h and reflash it.')) return;
+    setRotatingApiKey(true);
+    setDeviceApiKey('');
+    setApiKeyMessage('');
+    try {
+      const result = await devicesApi.rotateDeviceApiKey(DEVICE_ID);
+      setDeviceApiKey(result.deviceApiKey);
+      setApiKeyMessage(result.message);
+    } catch (error: any) {
+      setProvisionError(error.message || 'Unable to rotate the device API key.');
+    } finally {
+      setRotatingApiKey(false);
+    }
+  };
+
   const pendingCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'PENDING').length || 0;
   const failedCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'FAILED').length || 0;
   const isOnline = deviceData?.status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
@@ -105,6 +126,28 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+
+      <section className="rounded-2xl border border-amber-300/70 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Hardware API security</h2>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Rotate the device-specific credential used by the ESP32 for authenticated HTTPS requests.</p>
+          </div>
+          <button type="button" onClick={handleRotateDeviceApiKey} disabled={rotatingApiKey} className="rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900">
+            {rotatingApiKey ? 'Generating key…' : 'Generate / rotate device key'}
+          </button>
+        </div>
+        {deviceApiKey && (
+          <div className="mt-4 rounded-xl border border-amber-300 bg-white p-3 dark:border-amber-500/30 dark:bg-zinc-950">
+            <p className="text-xs font-bold text-red-600 dark:text-red-400">Copy this key now. It will not be shown again.</p>
+            <code className="mt-2 block break-all rounded-lg bg-zinc-100 p-3 text-xs text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100">{deviceApiKey}</code>
+            <button type="button" onClick={() => navigator.clipboard.writeText(deviceApiKey)} className="mt-3 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold dark:border-zinc-700">Copy key</button>
+            <p className="mt-2 text-xs text-zinc-500">Paste it into the local <code>DeviceConfig.h</code> as <code>PAYGO_DEVICE_API_KEY</code>, then reflash the ESP32. Do not commit or share that file.</p>
+          </div>
+        )}
+        {apiKeyMessage && <p role="status" className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">{apiKeyMessage}</p>}
+      </section>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -243,4 +286,9 @@ export default function AdminDashboardPage() {
       </div>
     </div>
   );
+}
+
+
+export default function AdminDashboardPage() {
+  return <AdminRoute><AdminDashboardContent /></AdminRoute>;
 }

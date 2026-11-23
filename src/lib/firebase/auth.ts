@@ -177,6 +177,38 @@ export async function signInFirebase(email: string, password: string): Promise<F
   return session;
 }
 
+export async function reauthenticateFirebase(email: string, password: string): Promise<void> {
+  const currentToken = await getFirebaseIdToken();
+  if (!currentToken) {
+    throw new FirebaseAuthError('Your PAYGO session has expired. Please sign in again.', 'AUTH_REQUIRED');
+  }
+
+  let currentUid = '';
+  try {
+    const payload = JSON.parse(atob(currentToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    currentUid = typeof payload.sub === 'string' ? payload.sub : '';
+  } catch {
+    throw new FirebaseAuthError('Your PAYGO session is invalid. Please sign in again.', 'AUTH_REQUIRED');
+  }
+  if (!currentUid) {
+    throw new FirebaseAuthError('Your PAYGO session is invalid. Please sign in again.', 'AUTH_REQUIRED');
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const session = await requestFirebase<FirebaseSession>('accounts:signInWithPassword', {
+    email: normalizedEmail,
+    password,
+    returnSecureToken: true,
+  });
+
+  // Never replace the active PAYGO session with a different Firebase account.
+  if (session.localId !== currentUid || session.email?.trim().toLowerCase() !== normalizedEmail) {
+    throw new FirebaseAuthError('Use the password for the account currently signed in to PAYGO.', 'ACCOUNT_MISMATCH');
+  }
+
+  saveSession(session);
+}
+
 export async function signInFirebaseWithGoogle(googleIdToken: string): Promise<FirebaseSession> {
   clearActiveSession();
   const session = await requestFirebase<FirebaseSession>('accounts:signInWithIdp', {

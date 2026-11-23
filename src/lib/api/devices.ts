@@ -33,6 +33,12 @@ export const devicesApi = {
     lastSeenAt: string | null; lastUpdated: string | null;
   }> }>('/api/owner/devices', { method: 'GET', requireAuth: true }),
 
+  rotateDeviceApiKey: async (deviceId: string) =>
+    apiClient<{ success: boolean; deviceId: string; deviceApiKey: string; message: string }>(
+      `/api/owner/devices/${encodeURIComponent(deviceId)}/rotate-api-key`,
+      { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
+    ),
+
   getPlatformDevice: async (deviceId: string) =>
     apiClient<DeviceResponse>(`/api/devices/${encodeURIComponent(deviceId)}`, { method: 'GET', requireAuth: true }),
 

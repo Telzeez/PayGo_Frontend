@@ -6,7 +6,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,9 +18,29 @@ jobs:
       NEXT_PUBLIC_API_URL: https://example.invalid
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global npm@11
+      - run: npm install --package-lock-only --ignore-scripts
       - run: npm ci
+      - name: Apply compatible dependency security updates
+        run: npm audit fix
+      - name: Enforce dependency security audit
+        run: npm audit --audit-level=moderate
       - run: npm run build
+      - name: Commit patched dependency lockfile
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "No dependency changes to commit."
+          else
+            git commit -m "fix: patch vulnerable frontend dependencies"
+            git push origin "HEAD:${GITHUB_HEAD_REF}"
+          fi

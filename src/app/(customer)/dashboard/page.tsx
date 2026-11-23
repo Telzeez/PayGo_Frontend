@@ -132,9 +132,19 @@ export default function Dashboard() {
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
             {devices.length > 1 ? (
-              <select value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="mt-1 max-w-[220px] bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-white">
-                {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
-              </select>
+              <div className="relative mt-1 w-fit max-w-[220px]">
+                <select
+                  aria-label="Select meter"
+                  value={selectedDeviceId || ''}
+                  onChange={(event) => selectDevice(event.target.value)}
+                  className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-3 pr-10 text-sm font-semibold text-zinc-900 shadow-sm outline-none transition-all hover:border-amber-400 hover:bg-amber-50/50 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-amber-500/60 dark:hover:bg-zinc-800"
+                >
+                  {devices.map((device) => <option className="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100" key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
+                </select>
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                  <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
             ) : (
               <div className="flex items-center gap-2"><h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || selectedDeviceId || 'Select a meter'}</h2>
               {isRefreshing && (

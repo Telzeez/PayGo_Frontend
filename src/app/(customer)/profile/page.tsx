@@ -250,7 +250,7 @@ export default function ProfilePage() {
 
 
       {/* Owner Device Settings — only available to an owner with an activated meter */}
-      {hasMeter && user?.role === 'OWNER' && (
+      {hasMeter && (user?.role === 'OWNER' || user?.role === 'ADMIN') && (
       <section className="bg-white dark:bg-[#121214] border border-red-200/70 dark:border-red-900/40 rounded-3xl p-6 shadow-sm space-y-3">
         <div>
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">Owner Settings</h2>

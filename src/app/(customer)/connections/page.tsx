@@ -384,7 +384,7 @@ export default function ConnectionsPage() {
                   Edit appliance list
                 </button>
               )}
-              {connection.status === 'APPROVED' && (
+              {['APPROVED', 'PENDING_REVISION'].includes(connection.status) && (
                 <div className="mt-3 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
                   Approved load limit: {Number(connection.approvedPowerW || 0).toFixed(0)} W.
                   {connection.installationConfirmedAt ? (
@@ -400,7 +400,7 @@ export default function ConnectionsPage() {
                   )}
                 </div>
               )}
-              {isSourceOwner && connection.status === 'APPROVED' && !connection.installationConfirmedAt && (
+              {isSourceOwner && ['APPROVED', 'PENDING_REVISION'].includes(connection.status) && !connection.installationConfirmedAt && (
                 <button
                   type="button"
                   disabled={saving}

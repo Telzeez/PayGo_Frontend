@@ -52,6 +52,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { label: 'Home', path: '/dashboard', icon: HomeIcon },
     { label: 'EDH', path: '/marketplace', icon: MarketIcon },
     { label: 'Meters', path: '/meters', icon: ZapIcon },
+    { label: 'Connections', path: '/connections', icon: HistoryIcon },
     ...(user?.isSeller ? [{ label: 'Seller', path: '/marketplace/seller', icon: ZapIcon }] : []),
     ...(devices.length > 0 ? [{ label: 'Recharge', path: '/recharge', icon: ZapIcon }] : []),
     { label: 'History', path: '/transactions', icon: HistoryIcon },
@@ -94,14 +95,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         
         <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           {devices.length > 1 && (
-            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="max-w-[112px] sm:max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+            <select aria-label="Select meter" value={selectedDeviceId || ''} onChange={(event) => selectDevice(event.target.value)} className="hidden sm:block max-w-[190px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-zinc-800 dark:text-zinc-100">
               {devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId}</option>)}
             </select>
           )}
           {user?.isSeller && (
             <Link
               href="/marketplace/seller"
-              className={`px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`hidden md:flex px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all items-center gap-1.5 ${
                 pathname === '/marketplace/seller'
                   ? 'bg-amber-500 text-zinc-950 font-extrabold shadow-sm'
                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
@@ -116,7 +117,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <Link 
             href="/profile" 
             title="Account Profile & Settings"
-            className="flex items-center gap-2 px-2 sm:px-3 py-2 sm:py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+            className="flex shrink-0 items-center gap-2 px-2 sm:px-3 py-2 sm:py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs font-semibold text-zinc-700 dark:text-zinc-300"
           >
             <UserIcon className="w-4 h-4 text-zinc-500" />
             <span className="hidden sm:inline">{user?.email ? user.email.split('@')[0] : 'Profile'}</span>
@@ -125,7 +126,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={logout}
             title="Sign Out of Account"
-            className="px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 text-xs font-bold transition-all border border-red-200/50 dark:border-red-500/20 flex items-center gap-1.5"
+            className="shrink-0 px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 text-xs font-bold transition-all border border-red-200/50 dark:border-red-500/20 flex items-center gap-1.5"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -158,13 +159,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </footer>}
 
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
-      {!isOnboarding && <nav className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/90 dark:bg-[#09090B]/90 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-safe">
-        <ul className="flex justify-around items-center px-1 py-2 max-w-lg mx-auto">
-          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Recharge', 'Profile'].includes(item.label)).map((item) => {
+      {!isOnboarding && <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-[env(safe-area-inset-bottom)]">
+        <ul className="flex w-full items-center gap-1 overflow-x-auto px-1 py-2">
+          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Connections', 'Seller', 'Recharge', 'History', 'Profile'].includes(item.label)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
-              <li key={item.path} className="flex-1 min-w-0">
+              <li key={item.path} className="min-w-[58px] flex-1">
                 <Link
                   href={item.path}
                   className={`w-full flex flex-col items-center px-1 py-2 transition-colors min-w-0 ${
@@ -174,7 +175,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-amber-500 scale-110' : ''} transition-transform`} />
-                  <span className="text-[10px] tracking-wide">{item.label}</span>
+                  <span className="text-[9px] leading-tight tracking-wide whitespace-nowrap">{item.label}</span>
                 </Link>
               </li>
             );

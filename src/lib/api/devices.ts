@@ -42,6 +42,18 @@ export const devicesApi = {
   getPlatformDevice: async (deviceId: string) =>
     apiClient<DeviceResponse>(`/api/devices/${encodeURIComponent(deviceId)}`, { method: 'GET', requireAuth: true }),
 
+  getDeviceSummary: async (deviceId: string) =>
+    apiClient<{
+      success: boolean;
+      meter: {
+        deviceId: string;
+        balance: number;
+        status: 'ONLINE' | 'OFFLINE';
+        lastSeenAt: string | null;
+        lastUpdated: string | null;
+      };
+    }>(`/api/meters/${encodeURIComponent(deviceId)}/summary`, { method: 'GET', requireAuth: true }),
+
   getDevice: async (deviceId: string) => {
     const response = await apiClient<{
       success: boolean;

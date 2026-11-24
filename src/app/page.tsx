@@ -684,6 +684,12 @@ function MarketplaceContent() {
             <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
               This purchase will credit the prosumer's shared PAYGO meter connected to your approved service.
             </p>
+            <Link
+              href={`/connections?sourceId=${selectedListing.sourceId}&sourceName=${encodeURIComponent(selectedListing.sourceName)}&buyerLatitude=${latitude}&buyerLongitude=${longitude}`}
+              className="block text-center text-xs font-bold text-amber-600 hover:underline"
+            >
+              Need a connection first? Request one here.
+            </Link>
 
             {/* kWh Input */}
             <div>

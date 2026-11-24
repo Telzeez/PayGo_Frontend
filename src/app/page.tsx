@@ -685,10 +685,10 @@ function MarketplaceContent() {
               This purchase will credit the prosumer's shared PAYGO meter connected to your approved service.
             </p>
             <Link
-              href={`/connections?sourceId=${selectedListing.sourceId}&sourceName=${encodeURIComponent(selectedListing.sourceName)}&buyerLatitude=${latitude}&buyerLongitude=${longitude}`}
+              href="/marketplace"
               className="block text-center text-xs font-bold text-amber-600 hover:underline"
             >
-              Need a connection first? Request one here.
+              Need a connection first? Open the location-aware marketplace.
             </Link>
 
             {/* kWh Input */}

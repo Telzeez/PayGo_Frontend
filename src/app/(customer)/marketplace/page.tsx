@@ -493,16 +493,9 @@ export default function BuyerMarketplacePage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Credit energy to my meter</label>
-              {ownedMeters.length > 0 ? (
-                <select value={buyerDeviceId} onChange={(event) => setBuyerDeviceId(event.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {ownedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
-                </select>
-              ) : (
-                <p className="text-xs text-red-600">No meter is assigned to your account. Register a meter before checkout.</p>
-              )}
-            </div>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              This purchase will credit the prosumer's shared PAYGO meter connected to your approved service.
+            </p>
 
             {/* kWh Input */}
             <div>
@@ -549,7 +542,7 @@ export default function BuyerMarketplacePage() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0 || !buyerDeviceId}
+                disabled={purchasing || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

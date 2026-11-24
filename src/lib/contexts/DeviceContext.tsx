@@ -11,6 +11,7 @@ export interface OwnerDevice {
   lastUpdated: string | null;
   assignmentStatus?: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
   meterPurpose?: 'GENERATION' | 'RECEIVING';
+  isShared?: boolean;
 }
 
 interface DeviceContextValue {
@@ -50,7 +51,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
         }>;
       }>('/api/meters/me');
       const combined = [
-        ...(response.ownedMeters || []).map((meter) => ({ ...meter, meterPurpose: meter.purpose })),
+        ...(response.ownedMeters || []).map((meter) => ({ ...meter, meterPurpose: meter.purpose, isShared: false })),
         ...(response.customerMeters || []).map((meter) => ({
           deviceId: meter.deviceId,
           balance: meter.balance,
@@ -59,6 +60,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
           lastUpdated: meter.lastUpdated || meter.lastSeenAt,
           assignmentStatus: meter.assignmentStatus,
           meterPurpose: meter.purpose,
+          isShared: true,
         })),
       ];
       const unique = new Map(combined.map((device) => [device.deviceId, device]));

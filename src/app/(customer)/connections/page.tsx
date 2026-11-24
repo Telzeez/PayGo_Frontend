@@ -117,6 +117,10 @@ export default function ConnectionsPage() {
       setError('Choose a seller listing and at least one appliance.');
       return;
     }
+    if (buyerLatitude === undefined || buyerLongitude === undefined) {
+      setError('Return to the marketplace, confirm your location, and select the energy source again.');
+      return;
+    }
     setSaving(true); setError(''); setNotice('');
     try {
       const selections = buildSelections();

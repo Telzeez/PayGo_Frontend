@@ -160,12 +160,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Premium Glassmorphic Bottom Nav (Mobile) */}
       {!isOnboarding && <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 w-full z-20 bg-white/95 dark:bg-[#09090B]/95 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 pb-[env(safe-area-inset-bottom)]">
-        <ul className="flex w-full items-center gap-1 overflow-x-auto px-1 py-2">
-          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Connections', 'Seller', 'Recharge', 'History', 'Profile'].includes(item.label)).map((item) => {
+        <ul className="flex w-full items-center gap-1 overflow-hidden px-1 py-2">
+          {navItems.filter(item => ['Home', 'EDH', 'Meters', 'Connections', 'Seller', 'Profile'].includes(item.label)).map((item) => {
             const isActive = pathname === item.path;
             const Icon = item.icon;
             return (
-              <li key={item.path} className="min-w-[58px] flex-1">
+              <li key={item.path} className="min-w-[48px] flex-1">
                 <Link
                   href={item.path}
                   className={`w-full flex flex-col items-center px-1 py-2 transition-colors min-w-0 ${

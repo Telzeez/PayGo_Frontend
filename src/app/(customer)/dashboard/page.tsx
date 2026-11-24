@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
 import { DeviceResponse, Transaction } from '@/lib/types';
 import Link from 'next/link';
@@ -9,10 +9,13 @@ import { ConsumptionOverview } from '@/components/ConsumptionOverview';
 import { useDevices } from '@/lib/contexts/DeviceContext';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
+type DashboardDeviceResponse = Omit<DeviceResponse, 'transactions' | 'readings'>;
+
 export default function Dashboard() {
-  const [deviceData, setDeviceData] = useState<DeviceResponse | null>(null);
+  const [deviceData, setDeviceData] = useState<DashboardDeviceResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const requestInFlight = useRef(false);
+  const [statusClock, setStatusClock] = useState(Date.now());
   const [error, setError] = useState('');
   const { devices, selectedDevice, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
   const { user } = useAuth();
@@ -21,15 +24,17 @@ export default function Dashboard() {
     let mounted = true;
 
     const fetchDevice = async (isPolling = false) => {
-      if (isPolling) setIsRefreshing(true);
+      if (requestInFlight.current) return;
+      requestInFlight.current = true;
       try {
         if (!selectedDeviceId) {
           if (!loadingDevices && mounted) setError(deviceError || '');
           return;
         }
-        const response = await devicesApi.getDevice(selectedDeviceId);
+        const response = await devicesApi.getDeviceSummary(selectedDeviceId);
         if (mounted && response.success) {
-          setDeviceData(response);
+          const nextData: DashboardDeviceResponse = { success: true, deviceId: response.meter.deviceId, balance: response.meter.balance, status: response.meter.status, lastSeenAt: response.meter.lastSeenAt, lastUpdated: response.meter.lastUpdated || response.meter.lastSeenAt || '' };
+          setDeviceData((current) => current && current.deviceId === nextData.deviceId && current.balance === nextData.balance && current.status === nextData.status && current.lastSeenAt === nextData.lastSeenAt && current.lastUpdated === nextData.lastUpdated ? current : nextData);
           setError('');
         } else if (mounted && !response.success && !isPolling) {
           setError('Failed to load device data.');
@@ -41,7 +46,7 @@ export default function Dashboard() {
       } finally {
         if (mounted) {
           if (!isPolling) setLoading(false);
-          if (isPolling) setIsRefreshing(false);
+          requestInFlight.current = false;
         }
       }
     };
@@ -54,6 +59,11 @@ export default function Dashboard() {
       clearInterval(interval);
     };
   }, [selectedDeviceId, loadingDevices, deviceError]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setStatusClock(Date.now()), 30000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount);
@@ -112,9 +122,9 @@ export default function Dashboard() {
     );
   }
 
-  const { balance, status, deviceId, transactions } = deviceData || {};
-  // Fast offline check: if device hasn't sent a heartbeat within 13 seconds, reflect offline immediately
-  const isMeterOnline = status === 'ONLINE' && (!deviceData?.lastSeenAt || (Date.now() - new Date(deviceData.lastSeenAt).getTime() < 13000));
+  const { balance, status, deviceId, lastSeenAt } = deviceData || {};
+  const isMeterOnline = status === 'ONLINE';
+  const lastSeenLabel = lastSeenAt ? (() => { const seconds = Math.max(0, Math.floor((statusClock - new Date(lastSeenAt).getTime()) / 1000)); if (seconds < 60) return 'just now'; if (seconds < 3600) return `${Math.floor(seconds / 60)} minute${Math.floor(seconds / 60) === 1 ? '' : 's'} ago`; if (seconds < 86400) return `${Math.floor(seconds / 3600)} hour${Math.floor(seconds / 3600) === 1 ? '' : 's'} ago`; return `${Math.floor(seconds / 86400)} day${Math.floor(seconds / 86400) === 1 ? '' : 's'} ago`; })() : 'Never connected';
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -138,12 +148,6 @@ export default function Dashboard() {
               </select>
             ) : (
               <div className="flex items-center gap-2"><h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{deviceId || selectedDeviceId || 'Select a meter'}</h2>
-              {isRefreshing && (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-zinc-400 animate-spin">
-                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
-                  <path d="M21 3v5h-5"></path>
-                </svg>
-              )}
               </div>
             )}
           </div>
@@ -156,8 +160,11 @@ export default function Dashboard() {
           ) : (
             <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-3 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-700">
                <div className="w-1.5 h-1.5 rounded-full bg-zinc-400"></div>
-               Meter Offline
+               <span>Meter Offline</span>
             </div>
+          )}
+          {!isMeterOnline && (
+            <p className="w-full text-right text-[11px] text-zinc-500 dark:text-zinc-400 sm:ml-auto">Last seen: {lastSeenLabel}</p>
           )}
         </div>
         

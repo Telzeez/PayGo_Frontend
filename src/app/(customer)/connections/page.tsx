@@ -36,6 +36,7 @@ export default function ConnectionsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [highlightConnectionId, setHighlightConnectionId] = useState<number | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -74,6 +75,8 @@ export default function ConnectionsPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const requestedConnectionId = Number(params.get('connectionId'));
+    if (Number.isSafeInteger(requestedConnectionId) && requestedConnectionId > 0) setHighlightConnectionId(requestedConnectionId);
     const requestedSourceId = params.get('sourceId');
     if (requestedSourceId) setSourceId(requestedSourceId);
     const requestedSourceName = params.get('sourceName');
@@ -86,6 +89,12 @@ export default function ConnectionsPage() {
     }
     refresh();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (loading || highlightConnectionId === null) return;
+    const target = document.getElementById(`connection-${highlightConnectionId}`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [loading, connections, highlightConnectionId]);
 
   const selectedAppliances = useMemo(() => appliances.filter((item) => drafts[item.id]?.selected), [appliances, drafts]);
 
@@ -328,7 +337,7 @@ export default function ConnectionsPage() {
           const isSourceOwner = connection.sourceOwnerId === user?.id;
           const isAwaitingDecision = connection.status === 'PENDING' || connection.status === 'PENDING_REVISION';
           return (
-            <article key={connection.id} className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-[#121214]">
+            <article id={`connection-${connection.id}`} key={connection.id} className={`rounded-2xl border bg-white p-4 transition-colors dark:bg-[#121214] ${highlightConnectionId === connection.id ? "border-amber-500 ring-2 ring-amber-500/20 dark:border-amber-400" : "border-zinc-200 dark:border-zinc-800"}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{connection.sourceName}</h3>

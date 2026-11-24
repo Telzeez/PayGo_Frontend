@@ -77,7 +77,11 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { void refreshDevices(); }, [refreshDevices]);
+  useEffect(() => {
+    void refreshDevices();
+    const interval = window.setInterval(() => { void refreshDevices(); }, 15000);
+    return () => window.clearInterval(interval);
+  }, [refreshDevices]);
 
   const selectDevice = useCallback((deviceId: string) => {
     if (!devices.some((device) => device.deviceId === deviceId)) return;

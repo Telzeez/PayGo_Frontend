@@ -14,7 +14,7 @@ type NotificationItem = {
   createdAt: string;
 };
 
-export default function NotificationBell() {
+export default function NotificationBell({ canReceiveNearbyAlerts }: { canReceiveNearbyAlerts: boolean }) {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -146,7 +146,7 @@ export default function NotificationBell() {
               ))}
             </div>
 
-            <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
+            {canReceiveNearbyAlerts && <div className="border-t border-zinc-100 px-4 py-3 dark:border-zinc-800">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">Nearby energy alerts</p>
@@ -163,7 +163,7 @@ export default function NotificationBell() {
               </div>
               <p className="mt-2 text-[10px] leading-relaxed text-zinc-500">Opt-in only. PAYGO rounds your location to approximately 100 m and deletes it when you turn alerts off.</p>
               {feedback && <p role="status" className="mt-2 text-[10px] text-amber-700 dark:text-amber-400">{feedback}</p>}
-            </div>
+            </div>}
           </section>
         </>
       )}

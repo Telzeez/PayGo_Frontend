@@ -315,7 +315,7 @@ export default function BuyerMarketplacePage() {
           {/* Unified Marketplace Feed */}
           <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl overflow-hidden shadow-sm">
             {/* Header & Controls Area */}
-            <div className="p-5 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/20">
+            <div className="p-3 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/20">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                 <div>
                   <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -344,8 +344,8 @@ export default function BuyerMarketplacePage() {
                      
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-2.5 justify-end">
-                    <div className="flex items-center gap-1 bg-white dark:bg-[#121214] p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2.5 justify-start sm:justify-end">
+                    <div className="flex w-full max-w-full flex-wrap items-center justify-between gap-1 bg-white dark:bg-[#121214] p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm sm:w-auto sm:flex-nowrap sm:justify-start">
                       {[200, 500, 1000, 2000, 5000].map((r) => (
                         <button
                           key={r}
@@ -376,7 +376,7 @@ export default function BuyerMarketplacePage() {
             </div>
 
             {/* Feed List Area */}
-            <div className="p-5 sm:p-6 bg-zinc-50/30 dark:bg-[#09090b]">
+            <div className="p-3 sm:p-6 bg-zinc-50/30 dark:bg-[#09090b]">
               {loading ? (
                 <div className="space-y-3">
                   <div className="h-28 bg-white dark:bg-[#121214] rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-pulse"></div>
@@ -401,10 +401,10 @@ export default function BuyerMarketplacePage() {
                   {listings.map((item) => (
                   <div
                     key={item.listingId}
-                    className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2.5">
                         <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                           <MapPinIcon className="w-3.5 h-3.5" />
                           <span>{item.distanceMeters} m away</span>
@@ -422,7 +422,7 @@ export default function BuyerMarketplacePage() {
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                      <h3 className="break-words text-base font-bold text-zinc-900 dark:text-white">
                         {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
                       </h3>
 
@@ -431,10 +431,10 @@ export default function BuyerMarketplacePage() {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-3 sm:pt-0">
+                    <div className="flex min-w-0 items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-3 sm:pt-0">
                       <div className="text-left sm:text-right">
                         <p className="text-xs text-zinc-400 font-medium">Tariff</p>
-                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                        <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
                           ₦{Number(item.pricePerKwh).toLocaleString()}<span className="text-xs text-zinc-400">/kWh</span>
                         </p>
                       </div>

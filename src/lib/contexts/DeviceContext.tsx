@@ -35,8 +35,29 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
   const refreshDevices = useCallback(async () => {
     try {
       setDeviceError('');
-      const response = await apiClient<{ success: boolean; devices: OwnerDevice[] }>('/api/owner/devices');
-      const available = (response.devices || []).filter((device) => device.assignmentStatus === 'ACTIVATED');
+      const response = await apiClient<{
+        success: boolean;
+        ownedMeters: Array<OwnerDevice>;
+        customerMeters: Array<{
+          deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
+          lastSeenAt: string | null; purpose: 'GENERATION' | 'RECEIVING';
+          assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
+        }>;
+      }>('/api/meters/me');
+      const combined = [
+        ...(response.ownedMeters || []),
+        ...(response.customerMeters || []).map((meter) => ({
+          deviceId: meter.deviceId,
+          balance: meter.balance,
+          status: meter.status,
+          lastSeenAt: meter.lastSeenAt,
+          lastUpdated: meter.lastSeenAt,
+          assignmentStatus: meter.assignmentStatus,
+          meterPurpose: meter.purpose,
+        })),
+      ];
+      const unique = new Map(combined.map((device) => [device.deviceId, device]));
+      const available = Array.from(unique.values()).filter((device) => device.assignmentStatus === 'ACTIVATED');
       setDevices(available);
       setSelectedDeviceId((current) => {
         const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;

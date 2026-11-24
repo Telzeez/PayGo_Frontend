@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
-import { devicesApi } from '@/lib/api/devices';
 import { connectionsApi, CustomerConnection } from '@/lib/api/connections';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 import LocationPicker from '@/components/marketplace/LocationPicker';
@@ -38,8 +37,6 @@ export default function BuyerMarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
-  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
-  const [buyerDeviceId, setBuyerDeviceId] = useState('');
   const [customerConnections, setCustomerConnections] = useState<CustomerConnection[]>([]);
 
 
@@ -139,28 +136,6 @@ export default function BuyerMarketplacePage() {
   useEffect(() => {
     let active = true;
     if (!user) {
-      setOwnedMeters([]);
-      setBuyerDeviceId('');
-      return () => { active = false; };
-    }
-    devicesApi.getDevices().then((response) => {
-      if (!active) return;
-      const meters = (response.devices || []).filter((meter: any) =>
-        meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'RECEIVING'
-      );
-      setOwnedMeters(meters);
-      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
-        ? current
-        : meters[0]?.deviceId || '');
-    }).catch((error) => {
-      if (active) console.error('Unable to load buyer meters:', error);
-    });
-    return () => { active = false; };
-  }, [user?.id]);
-
-  useEffect(() => {
-    let active = true;
-    if (!user) {
       setCustomerConnections([]);
       return () => { active = false; };
     }
@@ -180,15 +155,14 @@ export default function BuyerMarketplacePage() {
     if (!connection) return 'NONE';
     if (connection.status === 'PENDING') return 'PENDING';
     if (connection.status === 'PENDING_REVISION') return 'PENDING_REVISION';
-    if (connection.status === 'APPROVED' && connection.receivingDeviceId &&
-        ownedMeters.some((meter) => meter.deviceId === connection.receivingDeviceId)) return 'ACTIVE';
-    if (connection.status === 'APPROVED' && connection.receivingDeviceId) return 'ACTIVATE_METER';
+    if (connection.status === 'APPROVED' && connection.installationConfirmedAt) return 'ACTIVE';
+    if (connection.status === 'APPROVED') return 'INSTALLATION_PENDING';
     return 'METER_PENDING';
   };
 
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || !buyerDeviceId || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -203,7 +177,6 @@ export default function BuyerMarketplacePage() {
       // Step 1: Create Concurrency-Safe Reserved Purchase Intent
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
-        buyerDeviceId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -215,6 +188,7 @@ export default function BuyerMarketplacePage() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.paymentUrl) {
@@ -458,13 +432,13 @@ export default function BuyerMarketplacePage() {
                         </button>
                       ) : (
                         <Link
-                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}`}
+                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}&buyerLatitude=${latitude}&buyerLongitude=${longitude}`}
                           className="bg-amber-500 text-zinc-950 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-amber-400 transition-all shadow-sm text-center"
                         >
                           {getConnectionState(item.sourceId) === 'PENDING' ? 'Request pending' :
                            getConnectionState(item.sourceId) === 'PENDING_REVISION' ? 'Review load request' :
-                           getConnectionState(item.sourceId) === 'METER_PENDING' ? 'Approved · meter pending' :
-                           getConnectionState(item.sourceId) === 'ACTIVATE_METER' ? 'Activate meter' :
+                           getConnectionState(item.sourceId) === 'INSTALLATION_PENDING' ? 'Approved · installation pending' :
+                           getConnectionState(item.sourceId) === 'METER_PENDING' ? 'Connection pending' :
                            'Request connection'}
                         </Link>
                       )}

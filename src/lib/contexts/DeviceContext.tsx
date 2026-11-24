@@ -37,21 +37,26 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       setDeviceError('');
       const response = await apiClient<{
         success: boolean;
-        ownedMeters: Array<OwnerDevice>;
+        ownedMeters: Array<{
+          deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
+          lastSeenAt: string | null; lastUpdated: string | null;
+          purpose: 'GENERATION' | 'RECEIVING';
+          assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
+        }>;
         customerMeters: Array<{
           deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
-          lastSeenAt: string | null; purpose: 'GENERATION' | 'RECEIVING';
+          lastSeenAt: string | null; lastUpdated: string | null; purpose: 'GENERATION' | 'RECEIVING';
           assignmentStatus: 'UNASSIGNED' | 'ASSIGNED' | 'ACTIVATED' | 'SUSPENDED';
         }>;
       }>('/api/meters/me');
       const combined = [
-        ...(response.ownedMeters || []),
+        ...(response.ownedMeters || []).map((meter) => ({ ...meter, meterPurpose: meter.purpose })),
         ...(response.customerMeters || []).map((meter) => ({
           deviceId: meter.deviceId,
           balance: meter.balance,
           status: meter.status,
           lastSeenAt: meter.lastSeenAt,
-          lastUpdated: meter.lastSeenAt,
+          lastUpdated: meter.lastUpdated || meter.lastSeenAt,
           assignmentStatus: meter.assignmentStatus,
           meterPurpose: meter.purpose,
         })),

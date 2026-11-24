@@ -228,7 +228,7 @@ export default function ConnectionsPage() {
           Choose the appliances you intend to use. PAYGO estimates simultaneous demand, apparent power and starting surge using catalogue ratings. If your appliance label shows a different wattage, enter that value.
         </p>
         <form onSubmit={submitRequest} className="mt-5 space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Seller source ID</label>
               <input value={sourceId} onChange={(event) => setSourceId(event.target.value)} inputMode="numeric" required placeholder="Choose Request connection from a listing" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
@@ -257,7 +257,7 @@ export default function ConnectionsPage() {
                       </div>
                     </div>
                     {draft.selected && (
-                      <div className="mt-3 grid grid-cols-2 gap-3 pl-7 sm:grid-cols-3">
+                      <div className="mt-3 grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 gap-3 pl-7">
                         <label className="text-[11px] text-zinc-500">Quantity
                           <input type="number" min="1" max="100" value={draft.quantity} onChange={(event) => updateDraft(appliance.id, { quantity: Number(event.target.value) })} className="mt-1 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
                         </label>

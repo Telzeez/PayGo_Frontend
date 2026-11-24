@@ -154,6 +154,7 @@ export default function BuyerMarketplacePage() {
     );
     if (!connection) return 'NONE';
     if (connection.status === 'PENDING') return 'PENDING';
+    if (connection.status === 'PENDING_REVISION' && connection.installationConfirmedAt) return 'ACTIVE';
     if (connection.status === 'PENDING_REVISION') return 'PENDING_REVISION';
     if (connection.status === 'APPROVED' && connection.installationConfirmedAt) return 'ACTIVE';
     if (connection.status === 'APPROVED') return 'INSTALLATION_PENDING';

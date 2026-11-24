@@ -111,7 +111,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           )}
 
-          {!isOnboarding && <NotificationBell />}
+          {!isOnboarding && <NotificationBell canReceiveNearbyAlerts={Boolean(user?.isBuyer)} />}
 
           <Link 
             href="/profile" 

@@ -161,6 +161,11 @@ export default function Dashboard() {
           )}
         </div>
         
+        {selectedDevice?.isShared && (
+          <p className="mb-2 text-center text-xs text-zinc-500">
+            Shared prosumer meter · balance and readings reflect this single physical meter.
+          </p>
+        )}
         <div className="flex flex-col items-center justify-center py-6 mb-2">
           <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase mb-3">Available Balance</p>
           <div className="flex items-baseline gap-2">

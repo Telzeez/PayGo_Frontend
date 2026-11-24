@@ -25,7 +25,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] dark:bg-[#09090B]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-4 border-zinc-200 dark:border-zinc-800 border-t-zinc-900 dark:border-t-zinc-100 animate-spin"></div>
-          <p className="text-sm font-medium text-zinc-500">Loading PayGo...</p>
         </div>
       </div>
     );

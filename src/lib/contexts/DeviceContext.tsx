@@ -65,7 +65,20 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
       ];
       const unique = new Map(combined.map((device) => [device.deviceId, device]));
       const available = Array.from(unique.values()).filter((device) => device.assignmentStatus === 'ACTIVATED');
-      setDevices(available);
+      setDevices((current) => {
+        const unchanged = current.length === available.length && current.every((device, index) => {
+          const next = available[index];
+          return device.deviceId === next.deviceId &&
+            device.balance === next.balance &&
+            device.status === next.status &&
+            device.lastSeenAt === next.lastSeenAt &&
+            device.lastUpdated === next.lastUpdated &&
+            device.assignmentStatus === next.assignmentStatus &&
+            device.meterPurpose === next.meterPurpose &&
+            device.isShared === next.isShared;
+        });
+        return unchanged ? current : available;
+      });
       setSelectedDeviceId((current) => {
         const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
         const preferred = current || saved;

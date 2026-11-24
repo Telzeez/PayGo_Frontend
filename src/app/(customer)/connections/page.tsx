@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { connectionsApi, Appliance, ApplianceSelection, CustomerConnection } from '@/lib/api/connections';
 import { marketplaceApi, SellerSource } from '@/lib/api/marketplace';
-import { devicesApi } from '@/lib/api/devices';
 
 type ApplianceDraft = {
   selected: boolean;
@@ -26,7 +25,8 @@ export default function ConnectionsPage() {
   const [appliances, setAppliances] = useState<Appliance[]>([]);
   const [connections, setConnections] = useState<CustomerConnection[]>([]);
   const [sources, setSources] = useState<SellerSource[]>([]);
-  const [meters, setMeters] = useState<Array<{ deviceId: string; assignmentStatus: string; meterPurpose: string }>>([]);
+  const [buyerLatitude, setBuyerLatitude] = useState<number | undefined>();
+  const [buyerLongitude, setBuyerLongitude] = useState<number | undefined>();
   const [sourceId, setSourceId] = useState('');
   const [sourceName, setSourceName] = useState('');
   const [editingConnectionId, setEditingConnectionId] = useState<number | null>(null);
@@ -41,20 +41,14 @@ export default function ConnectionsPage() {
     setLoading(true);
     setError('');
     try {
-      const [catalogueRes, connectionRes, sourceRes, meterRes] = await Promise.all([
+      const [catalogueRes, connectionRes, sourceRes] = await Promise.all([
         connectionsApi.getAppliances(),
         connectionsApi.getMine(),
         marketplaceApi.getSellerSources(),
-        devicesApi.getDevices(),
       ]);
       setAppliances(catalogueRes.appliances || []);
       setConnections(connectionRes.connections || []);
       setSources(sourceRes.sources || []);
-      setMeters((meterRes.devices || []).map((meter) => ({
-        deviceId: meter.deviceId,
-        assignmentStatus: meter.assignmentStatus,
-        meterPurpose: meter.meterPurpose,
-      })));
       setCapacityDrafts((current) => {
         const next = { ...current };
         for (const source of sourceRes.sources || []) {
@@ -84,6 +78,12 @@ export default function ConnectionsPage() {
     if (requestedSourceId) setSourceId(requestedSourceId);
     const requestedSourceName = params.get('sourceName');
     if (requestedSourceName) setSourceName(requestedSourceName);
+    const requestedLatitude = params.get('buyerLatitude');
+    const requestedLongitude = params.get('buyerLongitude');
+    if (requestedLatitude && requestedLongitude) {
+      setBuyerLatitude(Number(requestedLatitude));
+      setBuyerLongitude(Number(requestedLongitude));
+    }
     refresh();
   }, [user?.id]);
 
@@ -128,6 +128,7 @@ export default function ConnectionsPage() {
         const result = await connectionsApi.createRequest({
           sourceId: Number(sourceId),
           appliances: selections,
+          ...(buyerLatitude !== undefined && buyerLongitude !== undefined ? { buyerLatitude, buyerLongitude } : {}),
         });
         setNotice(
           `Connection request submitted. Estimated allocation: ${Number(result.assessment.requestedPowerW).toFixed(0)} W, ${Number(result.assessment.requestedApparentVa).toFixed(0)} VA, starting surge ${Number(result.assessment.requestedStartingSurgeVa).toFixed(0)} VA.`
@@ -176,9 +177,19 @@ export default function ConnectionsPage() {
 
   const customerRequests = connections.filter((connection) => connection.customerId === user?.id);
   const sellerRequests = connections.filter((connection) => connection.sourceOwnerId === user?.id);
-  const activeReceivingMeter = (deviceId: string | null) => deviceId
-    ? meters.some((meter) => meter.deviceId === deviceId && meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'RECEIVING')
-    : false;
+
+  const confirmInstallation = async (connection: CustomerConnection) => {
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const result = await connectionsApi.confirmInstallation(connection.id);
+      setNotice(result.message || 'Cable installation confirmed.');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Unable to confirm cable installation.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -206,7 +217,7 @@ export default function ConnectionsPage() {
               {sourceName && <p className="mt-1 text-xs text-zinc-500">Selected listing: {sourceName}</p>}
             </div>
             <div className="flex items-end">
-              <p className="text-xs text-zinc-500">A receiving meter is assigned after the prosumer approves your request. You do not need to select a seller's generation meter.</p>
+              <p className="text-xs text-zinc-500">The owner's existing PAYGO meter stays at the energy source. Once the owner approves your load, agrees the cable route and confirms installation, that same meter becomes visible on your dashboard.</p>
             </div>
           </div>
 
@@ -300,7 +311,7 @@ export default function ConnectionsPage() {
       <section className="space-y-3">
         <div>
           <h2 className="font-bold text-zinc-900 dark:text-white">Connection requests and approvals</h2>
-          <p className="mt-1 text-xs text-zinc-500">Prosumer owners approve or reject requested loads. A rejected increase does not change a customer's previous approved limit.</p>
+          <p className="mt-1 text-xs text-zinc-500">The owner approves the initial connection, completes the cable installation, then confirms it here. Energy purchases do not require further owner approval.</p>
         </div>
         {loading ? <p className="text-sm text-zinc-500">Loading connections…</p> : connections.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">No connection requests yet.</div>
@@ -312,7 +323,21 @@ export default function ConnectionsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{connection.sourceName}</h3>
-                  <p className="mt-1 text-xs text-zinc-500">Connection #{connection.id} · {isSourceOwner ? `Customer #${connection.customerId}` : 'Your request'}</p>
+                  <p className="mt-1 text-xs text-zinc-500">Connection #{connection.id} · {isSourceOwner ? (connection.customerEmail || `Customer #${connection.customerId}`) : 'Your request'}</p>
+                  {isSourceOwner && connection.buyerLatitude !== null && connection.buyerLatitude !== undefined &&
+                    connection.buyerLongitude !== null && connection.buyerLongitude !== undefined && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="text-zinc-500">Buyer location · approx. {connection.buyerDistanceMeters ?? '—'} m away</span>
+                      <a
+                        href={`https://www.google.com/maps?q=${connection.buyerLatitude},${connection.buyerLongitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-amber-600 hover:underline"
+                      >
+                        View approximate map location
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
                   connection.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' :
@@ -361,14 +386,29 @@ export default function ConnectionsPage() {
               )}
               {connection.status === 'APPROVED' && (
                 <div className="mt-3 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-                  Approved limit: {Number(connection.approvedPowerW || 0).toFixed(0)} W.
-                  {connection.receivingDeviceId ? (
-                    <span> Receiving meter: <strong>{connection.receivingDeviceId}</strong> — {activeReceivingMeter(connection.receivingDeviceId) ? 'activated' : 'awaiting activation'}.</span>
-                  ) : <span> Awaiting PAYGO to assign a dedicated receiving meter.</span>}
-                  {!isSourceOwner && connection.receivingDeviceId && !activeReceivingMeter(connection.receivingDeviceId) && (
-                    <Link href="/meters" className="ml-1 font-bold text-amber-600 hover:underline">Activate meter</Link>
+                  Approved load limit: {Number(connection.approvedPowerW || 0).toFixed(0)} W.
+                  {connection.installationConfirmedAt ? (
+                    <p className="mt-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                      Cable installation confirmed. The buyer can now view the shared meter and purchase energy independently.
+                    </p>
+                  ) : (
+                    <p className="mt-1">
+                      {isSourceOwner
+                        ? 'After the cable has been installed and tested, confirm it below to activate the buyer dashboard.'
+                        : 'The owner has approved your connection. Your dashboard and energy purchases will become available after cable installation is confirmed.'}
+                    </p>
                   )}
                 </div>
+              )}
+              {isSourceOwner && connection.status === 'APPROVED' && !connection.installationConfirmedAt && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => confirmInstallation(connection)}
+                  className="mt-3 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Confirm cable installation'}
+                </button>
               )}
               {isSourceOwner && isAwaitingDecision && (
                 <div className="mt-4 flex flex-wrap gap-2">

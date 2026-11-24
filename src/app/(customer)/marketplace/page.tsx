@@ -433,7 +433,7 @@ export default function BuyerMarketplacePage() {
                         </button>
                       ) : (
                         <Link
-                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}&buyerLatitude=${latitude}&buyerLongitude=${longitude}`}
+                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}&buyerLatitude=${Number(latitude.toFixed(3))}&buyerLongitude=${Number(longitude.toFixed(3))}`}
                           className="bg-amber-500 text-zinc-950 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-amber-400 transition-all shadow-sm text-center"
                         >
                           {getConnectionState(item.sourceId) === 'PENDING' ? 'Request pending' :

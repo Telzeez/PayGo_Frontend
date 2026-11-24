@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useDevices } from '@/lib/contexts/DeviceContext';
+import NotificationBell from './NotificationBell';
 
 // Premium Inline SVGs (Lucide)
 const ZapIcon = ({ className }: { className?: string }) => (
@@ -109,6 +110,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span className="hidden xs:inline sm:inline">Seller</span><span className="sm:hidden">Sell</span>
             </Link>
           )}
+
+          {!isOnboarding && <NotificationBell />}
 
           <Link 
             href="/profile" 

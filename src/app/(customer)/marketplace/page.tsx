@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
@@ -19,7 +18,6 @@ const MapPinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 
 export default function BuyerMarketplacePage() {
   const { user } = useAuth();
-  const searchParams = useSearchParams();
 
   // Location State
   const [locationGranted, setLocationGranted] = useState(false);
@@ -137,11 +135,11 @@ export default function BuyerMarketplacePage() {
 
   // Open the exact listing when a buyer follows a nearby-energy notification.
   useEffect(() => {
-    const listingId = Number(searchParams.get('listingId'));
+    const listingId = Number(new URLSearchParams(window.location.search).get('listingId'));
     if (!Number.isSafeInteger(listingId) || listingId <= 0) return;
     const match = listings.find((listing) => listing.listingId === listingId);
     if (match) setSelectedListing(match);
-  }, [listings, searchParams]);
+  }, [listings]);
 
   useEffect(() => {
     let active = true;

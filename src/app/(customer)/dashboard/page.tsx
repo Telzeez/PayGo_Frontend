@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const { devices, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
+  const { devices, selectedDevice, selectedDeviceId, selectDevice, loadingDevices, deviceError } = useDevices();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -87,6 +87,7 @@ export default function Dashboard() {
         <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-500 dark:text-zinc-400">There is no activated meter linked to your account yet. You can still explore nearby energy offers. Your meter balance and controls will appear here after a meter is assigned and activated.</p>
         <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           <Link href="/marketplace" className="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950 hover:bg-amber-400">Find Nearby Energy</Link>
+          <Link href="/connections" className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">My Connections</Link>
           {user?.isSeller && <Link href="/marketplace/seller" className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">Seller Setup</Link>}
           <Link href="/profile" className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200">View Profile</Link>
         </div>
@@ -127,8 +128,8 @@ export default function Dashboard() {
       <OnboardingTutorial />
       
       {/* Premium Dashboard Card */}
-      <section className="bg-white dark:bg-[#121214] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+      <section className="min-w-0 bg-white dark:bg-[#121214] rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/60">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 mb-5 sm:mb-6">
           <div>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-0.5">{getGreeting()}</p>
             {devices.length > 1 ? (
@@ -160,22 +161,27 @@ export default function Dashboard() {
           )}
         </div>
         
+        {selectedDevice?.isShared && (
+          <p className="mb-2 text-center text-xs text-zinc-500">
+            Shared prosumer meter · balance and readings reflect this single physical meter.
+          </p>
+        )}
         <div className="flex flex-col items-center justify-center py-6 mb-2">
           <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase mb-3">Available Balance</p>
           <div className="flex items-baseline gap-2">
-            <p className="text-4xl sm:text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
+            <p className="text-3xl min-[380px]:text-4xl sm:text-6xl font-semibold tracking-tighter text-zinc-900 dark:text-white">
               {Number(balance || 0).toFixed(2)}
             </p>
-            <span className="text-2xl font-medium text-zinc-400 dark:text-zinc-500">kWh</span>
+            <span className="text-xl sm:text-2xl font-medium text-zinc-400 dark:text-zinc-500">kWh</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-          <Link href="/recharge" className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">
+          <Link href={selectedDevice?.isShared ? '/marketplace' : '/recharge'} className="w-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-zinc-800 dark:hover:bg-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-500">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            Recharge Meter
+            {selectedDevice?.isShared ? 'Buy Energy' : 'Recharge Meter'}
           </Link>
 
           <Link href="/marketplace" className="w-full bg-amber-500 text-zinc-950 font-bold py-4 px-4 rounded-2xl shadow-sm hover:bg-amber-400 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-xs">

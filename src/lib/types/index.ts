@@ -51,6 +51,7 @@ export interface PaymentInitiateRequest {
   amount: number;
   email: string;
   deviceId: string;
+  marketplacePurchaseId?: number;
 }
 
 export interface PaymentInitiateResponse {

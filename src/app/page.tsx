@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
-import { devicesApi } from '@/lib/api/devices';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 
 // Standard Lucide SVG Icon Components
@@ -99,8 +98,6 @@ function MarketplaceContent() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
-  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
-  const [buyerDeviceId, setBuyerDeviceId] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-load demo location on mount instead of prompting for GPS
@@ -175,29 +172,9 @@ function MarketplaceContent() {
     }
   };
 
-  useEffect(() => {
-    let active = true;
-    if (!user) {
-      setOwnedMeters([]);
-      setBuyerDeviceId('');
-      return () => { active = false; };
-    }
-    devicesApi.getDevices().then((response) => {
-      if (!active) return;
-      const meters = response.devices || [];
-      setOwnedMeters(meters);
-      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
-        ? current
-        : meters[0]?.deviceId || '');
-    }).catch((error) => {
-      if (active) console.error('Unable to load buyer meters:', error);
-    });
-    return () => { active = false; };
-  }, [user?.id]);
-
   // Handle Purchase Confirmation for authenticated users
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || !buyerDeviceId || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -211,7 +188,6 @@ function MarketplaceContent() {
     try {
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
-        buyerDeviceId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -222,6 +198,7 @@ function MarketplaceContent() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.paymentUrl) {
@@ -517,7 +494,7 @@ function MarketplaceContent() {
               {listings.map((item) => (
                 <div
                   key={item.listingId}
-                  className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+                  className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-5 group"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
@@ -538,7 +515,7 @@ function MarketplaceContent() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                    <h3 className="break-words text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
                       {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
                     </h3>
 
@@ -547,10 +524,10 @@ function MarketplaceContent() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-4 md:pt-0">
+                  <div className="flex min-w-0 items-center justify-between md:justify-end gap-4 sm:gap-6 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-4 md:pt-0">
                     <div className="text-left md:text-right">
                       <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Tariff Rate</p>
-                      <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      <p className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
                         ₦{Number(item.pricePerKwh).toLocaleString()}<span className="text-xs text-zinc-400 font-normal">/kWh</span>
                       </p>
                     </div>
@@ -570,7 +547,7 @@ function MarketplaceContent() {
         </section>
 
         {/* Technology / How It Works Section */}
-        <section id="how-it-works" className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-8 sm:p-12 shadow-sm space-y-8">
+        <section id="how-it-works" className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-12 shadow-sm space-y-6 sm:space-y-8">
           <div className="text-center space-y-2">
             <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">PAYGO SUBSYSTEM</span>
             <h2 className="text-xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white">How PayGo Local Energy Operates</h2>
@@ -704,16 +681,15 @@ function MarketplaceContent() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Credit energy to my meter</label>
-              {ownedMeters.length > 0 ? (
-                <select value={buyerDeviceId} onChange={(event) => setBuyerDeviceId(event.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {ownedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
-                </select>
-              ) : (
-                <p className="text-xs text-red-600">No meter is assigned to your account. Register a meter before checkout.</p>
-              )}
-            </div>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              This purchase will credit the prosumer's shared PAYGO meter connected to your approved service.
+            </p>
+            <Link
+              href="/marketplace"
+              className="block text-center text-xs font-bold text-amber-600 hover:underline"
+            >
+              Need a connection first? Open the location-aware marketplace.
+            </Link>
 
             {/* kWh Input */}
             <div>
@@ -763,7 +739,7 @@ function MarketplaceContent() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0 || !buyerDeviceId}
+                disabled={purchasing || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

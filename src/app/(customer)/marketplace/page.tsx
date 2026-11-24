@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
-import { devicesApi } from '@/lib/api/devices';
 import { connectionsApi, CustomerConnection } from '@/lib/api/connections';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 import LocationPicker from '@/components/marketplace/LocationPicker';
@@ -38,8 +37,6 @@ export default function BuyerMarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
-  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
-  const [buyerDeviceId, setBuyerDeviceId] = useState('');
   const [customerConnections, setCustomerConnections] = useState<CustomerConnection[]>([]);
 
 
@@ -136,27 +133,13 @@ export default function BuyerMarketplacePage() {
     }
   }, [locationGranted, locationPendingConfirmation, latitude, longitude, radiusMeters]);
 
+  // Open the exact listing when a buyer follows a nearby-energy notification.
   useEffect(() => {
-    let active = true;
-    if (!user) {
-      setOwnedMeters([]);
-      setBuyerDeviceId('');
-      return () => { active = false; };
-    }
-    devicesApi.getDevices().then((response) => {
-      if (!active) return;
-      const meters = (response.devices || []).filter((meter: any) =>
-        meter.assignmentStatus === 'ACTIVATED' && meter.meterPurpose === 'RECEIVING'
-      );
-      setOwnedMeters(meters);
-      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
-        ? current
-        : meters[0]?.deviceId || '');
-    }).catch((error) => {
-      if (active) console.error('Unable to load buyer meters:', error);
-    });
-    return () => { active = false; };
-  }, [user?.id]);
+    const listingId = Number(new URLSearchParams(window.location.search).get('listingId'));
+    if (!Number.isSafeInteger(listingId) || listingId <= 0) return;
+    const match = listings.find((listing) => listing.listingId === listingId);
+    if (match) setSelectedListing(match);
+  }, [listings]);
 
   useEffect(() => {
     let active = true;
@@ -164,12 +147,19 @@ export default function BuyerMarketplacePage() {
       setCustomerConnections([]);
       return () => { active = false; };
     }
-    connectionsApi.getMine().then((response) => {
-      if (active) setCustomerConnections(response.connections || []);
-    }).catch((error) => {
-      if (active) console.error('Unable to load connection approvals:', error);
-    });
-    return () => { active = false; };
+    const refreshConnections = () => {
+      connectionsApi.getMine().then((response) => {
+        if (active) setCustomerConnections(response.connections || []);
+      }).catch((error) => {
+        if (active) console.error('Unable to load connection approvals:', error);
+      });
+    };
+    refreshConnections();
+    const interval = window.setInterval(refreshConnections, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
   }, [user?.id]);
 
   const getConnectionState = (sourceId: number) => {
@@ -179,16 +169,16 @@ export default function BuyerMarketplacePage() {
     );
     if (!connection) return 'NONE';
     if (connection.status === 'PENDING') return 'PENDING';
+    if (connection.status === 'PENDING_REVISION' && connection.installationConfirmedAt) return 'ACTIVE';
     if (connection.status === 'PENDING_REVISION') return 'PENDING_REVISION';
-    if (connection.status === 'APPROVED' && connection.receivingDeviceId &&
-        ownedMeters.some((meter) => meter.deviceId === connection.receivingDeviceId)) return 'ACTIVE';
-    if (connection.status === 'APPROVED' && connection.receivingDeviceId) return 'ACTIVATE_METER';
+    if (connection.status === 'APPROVED' && connection.installationConfirmedAt) return 'ACTIVE';
+    if (connection.status === 'APPROVED') return 'INSTALLATION_PENDING';
     return 'METER_PENDING';
   };
 
   // Initiate Marketplace Purchase Intent and Continue to Paystack Checkout
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || !buyerDeviceId || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || !locationGranted || locationPendingConfirmation || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -203,7 +193,6 @@ export default function BuyerMarketplacePage() {
       // Step 1: Create Concurrency-Safe Reserved Purchase Intent
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
-        buyerDeviceId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -215,6 +204,7 @@ export default function BuyerMarketplacePage() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.paymentUrl) {
@@ -325,7 +315,7 @@ export default function BuyerMarketplacePage() {
           {/* Unified Marketplace Feed */}
           <section className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl overflow-hidden shadow-sm">
             {/* Header & Controls Area */}
-            <div className="p-5 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/20">
+            <div className="p-3 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/20">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                 <div>
                   <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
@@ -354,8 +344,8 @@ export default function BuyerMarketplacePage() {
                      
                   </div>
                   
-                  <div className="flex flex-wrap items-center gap-2.5 justify-end">
-                    <div className="flex items-center gap-1 bg-white dark:bg-[#121214] p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2.5 justify-start sm:justify-end">
+                    <div className="flex w-full max-w-full flex-wrap items-center justify-between gap-1 bg-white dark:bg-[#121214] p-1 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-sm sm:w-auto sm:flex-nowrap sm:justify-start">
                       {[200, 500, 1000, 2000, 5000].map((r) => (
                         <button
                           key={r}
@@ -386,7 +376,7 @@ export default function BuyerMarketplacePage() {
             </div>
 
             {/* Feed List Area */}
-            <div className="p-5 sm:p-6 bg-zinc-50/30 dark:bg-[#09090b]">
+            <div className="p-3 sm:p-6 bg-zinc-50/30 dark:bg-[#09090b]">
               {loading ? (
                 <div className="space-y-3">
                   <div className="h-28 bg-white dark:bg-[#121214] rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-pulse"></div>
@@ -411,10 +401,10 @@ export default function BuyerMarketplacePage() {
                   {listings.map((item) => (
                   <div
                     key={item.listingId}
-                    className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2.5">
                         <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                           <MapPinIcon className="w-3.5 h-3.5" />
                           <span>{item.distanceMeters} m away</span>
@@ -432,7 +422,7 @@ export default function BuyerMarketplacePage() {
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                      <h3 className="break-words text-base font-bold text-zinc-900 dark:text-white">
                         {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
                       </h3>
 
@@ -441,10 +431,10 @@ export default function BuyerMarketplacePage() {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-3 sm:pt-0">
+                    <div className="flex min-w-0 items-center justify-between sm:justify-end gap-3 sm:gap-4 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-3 sm:pt-0">
                       <div className="text-left sm:text-right">
                         <p className="text-xs text-zinc-400 font-medium">Tariff</p>
-                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                        <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
                           ₦{Number(item.pricePerKwh).toLocaleString()}<span className="text-xs text-zinc-400">/kWh</span>
                         </p>
                       </div>
@@ -458,13 +448,13 @@ export default function BuyerMarketplacePage() {
                         </button>
                       ) : (
                         <Link
-                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}`}
+                          href={`/connections?sourceId=${item.sourceId}&sourceName=${encodeURIComponent(item.sourceName)}&buyerLatitude=${Number((latitude ?? 0).toFixed(3))}&buyerLongitude=${Number((longitude ?? 0).toFixed(3))}`}
                           className="bg-amber-500 text-zinc-950 font-bold py-2.5 px-5 rounded-2xl text-xs hover:bg-amber-400 transition-all shadow-sm text-center"
                         >
                           {getConnectionState(item.sourceId) === 'PENDING' ? 'Request pending' :
                            getConnectionState(item.sourceId) === 'PENDING_REVISION' ? 'Review load request' :
-                           getConnectionState(item.sourceId) === 'METER_PENDING' ? 'Approved · meter pending' :
-                           getConnectionState(item.sourceId) === 'ACTIVATE_METER' ? 'Activate meter' :
+                           getConnectionState(item.sourceId) === 'INSTALLATION_PENDING' ? 'Approved · installation pending' :
+                           getConnectionState(item.sourceId) === 'METER_PENDING' ? 'Connection pending' :
                            'Request connection'}
                         </Link>
                       )}
@@ -482,7 +472,7 @@ export default function BuyerMarketplacePage() {
       {selectedListing && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
-            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 w-full max-w-md shadow-2xl relative space-y-4 sm:space-y-5 animate-in zoom-in-95 duration-200 max-h-[90dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-4">
@@ -518,16 +508,9 @@ export default function BuyerMarketplacePage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Credit energy to my meter</label>
-              {ownedMeters.length > 0 ? (
-                <select value={buyerDeviceId} onChange={(event) => setBuyerDeviceId(event.target.value)} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-white">
-                  {ownedMeters.map((meter) => <option key={meter.deviceId} value={meter.deviceId}>{meter.deviceId}</option>)}
-                </select>
-              ) : (
-                <p className="text-xs text-red-600">No meter is assigned to your account. Register a meter before checkout.</p>
-              )}
-            </div>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+              This purchase will credit the prosumer's shared PAYGO meter connected to your approved service.
+            </p>
 
             {/* kWh Input */}
             <div>
@@ -574,7 +557,7 @@ export default function BuyerMarketplacePage() {
 
               <button
                 onClick={handleConfirmPurchase}
-                disabled={purchasing || numKwh <= 0 || !buyerDeviceId}
+                disabled={purchasing || numKwh <= 0}
                 className="flex-1 bg-amber-500 text-zinc-950 font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-amber-400 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               >
                 {purchasing ? (

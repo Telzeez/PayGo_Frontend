@@ -11,8 +11,8 @@ export const devicesApi = {
   getMeterRegistry: async () =>
     apiClient<{ success: boolean; ownedMeters: Array<{
       deviceId: string; purpose: 'GENERATION' | 'RECEIVING'; assignmentStatus: string;
-      status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null;
-    }>; customerMeters: Array<{ deviceId: string; purpose: string; assignmentStatus: string; status: string; balance: number }> }>(
+      status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null; lastUpdated: string | null;
+    }>; customerMeters: Array<{ deviceId: string; purpose: string; assignmentStatus: string; status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null; lastUpdated: string | null }> }>(
       '/api/meters/me', { method: 'GET', requireAuth: true }
     ),
 
@@ -42,11 +42,27 @@ export const devicesApi = {
   getPlatformDevice: async (deviceId: string) =>
     apiClient<DeviceResponse>(`/api/devices/${encodeURIComponent(deviceId)}`, { method: 'GET', requireAuth: true }),
 
-  getDevice: async (deviceId: string) =>
-    apiClient<DeviceResponse & { readings?: Array<{ id: number; kwhConsumed: number; source: string; recordedAt: string }> }>(
-      `/api/owner/devices/${encodeURIComponent(deviceId)}`,
-      { method: 'GET', requireAuth: true }
-    ),
+  getDevice: async (deviceId: string) => {
+    const response = await apiClient<{
+      success: boolean;
+      meter: {
+        deviceId: string; balance: number; status: 'ONLINE' | 'OFFLINE';
+        lastSeenAt: string | null; lastUpdated: string | null;
+      };
+      transactions: DeviceResponse['transactions'];
+      readings: Array<{ id: number; kwhConsumed: number; source: string; recordedAt: string }>;
+    }>(`/api/meters/${encodeURIComponent(deviceId)}`, { method: 'GET', requireAuth: true });
+    return {
+      success: response.success,
+      deviceId: response.meter.deviceId,
+      balance: response.meter.balance,
+      status: response.meter.status,
+      lastSeenAt: response.meter.lastSeenAt,
+      lastUpdated: response.meter.lastUpdated || response.meter.lastSeenAt || '',
+      transactions: response.transactions,
+      readings: response.readings,
+    } as DeviceResponse & { readings: Array<{ id: number; kwhConsumed: number; source: string; recordedAt: string }> };
+  },
 
   resetBalance: async (deviceId: string) => apiClient<{ success: boolean; deviceId: string; balance: number; previousBalance: number; message: string }>(
     `/api/owner/devices/${encodeURIComponent(deviceId)}/reset-balance`,

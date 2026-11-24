@@ -24,6 +24,12 @@ export interface CustomerConnection {
   sourceOwnerId: number;
   customerId: number;
   receivingDeviceId: string | null;
+  sourceDeviceId: string;
+  customerEmail: string;
+  buyerLatitude: number | null;
+  buyerLongitude: number | null;
+  buyerDistanceMeters: number | null;
+  installationConfirmedAt: string | null;
   status: 'PENDING' | 'APPROVED' | 'PENDING_REVISION' | 'REJECTED' | 'CANCELLED';
   requestedPowerW: number;
   requestedApparentVa: number;
@@ -70,7 +76,7 @@ export const connectionsApi = {
     { method: 'GET', requireAuth: true }
   ),
 
-  createRequest: (data: { sourceId: number; appliances: ApplianceSelection[] }) =>
+  createRequest: (data: { sourceId: number; appliances: ApplianceSelection[]; buyerLatitude?: number; buyerLongitude?: number }) =>
     apiClient<{ success: boolean; connection: Partial<CustomerConnection>; assessment: LoadAssessment }>(
       '/api/connections/requests',
       { method: 'POST', requireAuth: true, body: JSON.stringify(data) }
@@ -80,6 +86,12 @@ export const connectionsApi = {
     apiClient<{ success: boolean; status: string; assessment: LoadAssessment; message: string }>(
       `/api/connections/${connectionId}/appliances`,
       { method: 'PUT', requireAuth: true, body: JSON.stringify({ appliances }) }
+    ),
+
+  confirmInstallation: (connectionId: number) =>
+    apiClient<{ success: boolean; installationConfirmedAt: string; message: string }>(
+      `/api/connections/${connectionId}/installation`,
+      { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
     ),
 
   decide: (connectionId: number, decision: 'APPROVE' | 'REJECT', note?: string) =>

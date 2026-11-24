@@ -202,7 +202,12 @@ export default function ConnectionsPage() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Energy connections</h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Declare your appliances, get your load approved, and manage customer connections.</p>
         </div>
-        <Link href="/marketplace" className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-bold dark:border-zinc-700">Back to marketplace</Link>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => refresh()} disabled={loading} className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-bold dark:border-zinc-700 disabled:opacity-50">
+            {loading ? 'Refreshing…' : 'Refresh requests'}
+          </button>
+          <Link href="/marketplace" className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-bold dark:border-zinc-700">Back to marketplace</Link>
+        </div>
       </header>
 
       {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">{error}</div>}

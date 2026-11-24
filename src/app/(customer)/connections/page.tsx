@@ -226,7 +226,7 @@ export default function ConnectionsPage() {
               {sourceName && <p className="mt-1 text-xs text-zinc-500">Selected listing: {sourceName}</p>}
             </div>
             <div className="flex items-end">
-              <p className="text-xs text-zinc-500">The owner's existing PAYGO meter stays at the energy source. Once the owner approves your load, agrees the cable route and confirms installation, that same meter becomes visible on your dashboard.</p>
+              <p className="text-xs text-zinc-500">The owner's existing PAYGO meter stays at the energy source. Once the owner approves your load, agrees the cable route and confirms installation, that same meter becomes visible on your dashboard. Your location is rounded to an approximate map pin before it is shown to the owner.</p>
             </div>
           </div>
 

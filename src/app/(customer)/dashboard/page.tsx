@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { devicesApi } from '@/lib/api/devices';
-import { DeviceResponse, Transaction } from '@/lib/types';
+import { DeviceResponse } from '@/lib/types';
 import Link from 'next/link';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { ConsumptionOverview } from '@/components/ConsumptionOverview';
@@ -44,10 +44,8 @@ export default function Dashboard() {
           setError(err.message || 'Error communicating with server.');
         }
       } finally {
-        if (mounted) {
-          if (!isPolling) setLoading(false);
-          requestInFlight.current = false;
-        }
+        requestInFlight.current = false;
+        if (mounted && !isPolling) setLoading(false);
       }
     };
 

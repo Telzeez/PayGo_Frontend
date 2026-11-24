@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 
 type NotificationItem = {
@@ -16,7 +15,6 @@ type NotificationItem = {
 };
 
 export default function NotificationBell() {
-  const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -100,7 +98,7 @@ export default function NotificationBell() {
     }
     setOpen(false);
     await refresh();
-    router.push(item.targetUrl || '/dashboard');
+    window.location.assign(item.targetUrl || '/dashboard');
   };
 
   return (

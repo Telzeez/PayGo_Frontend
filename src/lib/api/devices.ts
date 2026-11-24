@@ -11,8 +11,8 @@ export const devicesApi = {
   getMeterRegistry: async () =>
     apiClient<{ success: boolean; ownedMeters: Array<{
       deviceId: string; purpose: 'GENERATION' | 'RECEIVING'; assignmentStatus: string;
-      status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null;
-    }>; customerMeters: Array<{ deviceId: string; purpose: string; assignmentStatus: string; status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null }> }>(
+      status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null; lastUpdated: string | null;
+    }>; customerMeters: Array<{ deviceId: string; purpose: string; assignmentStatus: string; status: 'ONLINE' | 'OFFLINE'; balance: number; lastSeenAt: string | null; lastUpdated: string | null }> }>(
       '/api/meters/me', { method: 'GET', requireAuth: true }
     ),
 

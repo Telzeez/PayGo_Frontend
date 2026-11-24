@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { marketplaceApi, NearbyListing } from '@/lib/api/marketplace';
 import { paymentApi } from '@/lib/api/payment';
-import { devicesApi } from '@/lib/api/devices';
 import { EnergyDurationPredictor } from '@/components/marketplace/EnergyDurationPredictor';
 
 // Standard Lucide SVG Icon Components
@@ -99,8 +98,6 @@ function MarketplaceContent() {
   const [selectedListing, setSelectedListing] = useState<NearbyListing | null>(null);
   const [kwhAmount, setKwhAmount] = useState<string>('5.0');
   const [purchasing, setPurchasing] = useState(false);
-  const [ownedMeters, setOwnedMeters] = useState<Array<{ deviceId: string }>>([]);
-  const [buyerDeviceId, setBuyerDeviceId] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Auto-load demo location on mount instead of prompting for GPS
@@ -175,29 +172,9 @@ function MarketplaceContent() {
     }
   };
 
-  useEffect(() => {
-    let active = true;
-    if (!user) {
-      setOwnedMeters([]);
-      setBuyerDeviceId('');
-      return () => { active = false; };
-    }
-    devicesApi.getDevices().then((response) => {
-      if (!active) return;
-      const meters = response.devices || [];
-      setOwnedMeters(meters);
-      setBuyerDeviceId((current) => current && meters.some((meter) => meter.deviceId === current)
-        ? current
-        : meters[0]?.deviceId || '');
-    }).catch((error) => {
-      if (active) console.error('Unable to load buyer meters:', error);
-    });
-    return () => { active = false; };
-  }, [user?.id]);
-
   // Handle Purchase Confirmation for authenticated users
   const handleConfirmPurchase = async () => {
-    if (!selectedListing || !user?.email || !buyerDeviceId || latitude === null || longitude === null) return;
+    if (!selectedListing || !user?.email || latitude === null || longitude === null) return;
 
     const numKwh = parseFloat(kwhAmount);
     if (isNaN(numKwh) || numKwh <= 0) {
@@ -211,7 +188,6 @@ function MarketplaceContent() {
     try {
       const intentRes = await marketplaceApi.createPurchaseIntent(selectedListing.listingId, {
         kwhRequested: numKwh,
-        buyerDeviceId,
       });
 
       if (!intentRes.success || !intentRes.purchase) {
@@ -222,6 +198,7 @@ function MarketplaceContent() {
         amount: intentRes.purchase.amount,
         email: user.email,
         deviceId: intentRes.purchase.deviceId,
+        marketplacePurchaseId: intentRes.purchase.id,
       });
 
       if (paymentRes.success && paymentRes.paymentUrl) {

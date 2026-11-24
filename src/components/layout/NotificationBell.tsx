@@ -120,7 +120,7 @@ export default function NotificationBell({ canReceiveNearbyAlerts }: { canReceiv
       {open && (
         <>
           <button aria-label="Close notifications" className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
-          <section className="absolute right-0 z-40 mt-2 w-[min(90vw,360px)] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <section className="absolute right-0 z-40 mt-2 flex max-h-[80dvh] w-[min(90vw,360px)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
               <div>
                 <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Notifications</h2>
@@ -129,7 +129,7 @@ export default function NotificationBell({ canReceiveNearbyAlerts }: { canReceiv
               <button onClick={() => void refresh()} className="text-xs font-semibold text-amber-600 hover:text-amber-700">Refresh</button>
             </div>
 
-            <div className="max-h-80 overflow-y-auto">
+            <div className="min-h-0 max-h-64 flex-1 overflow-y-auto sm:max-h-80">
               {items.length === 0 ? (
                 <p className="px-4 py-8 text-center text-xs text-zinc-500">You’re all caught up. New connection requests and nearby energy offers will appear here.</p>
               ) : items.map(item => (

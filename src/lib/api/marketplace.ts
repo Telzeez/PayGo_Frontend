@@ -153,7 +153,6 @@ export const marketplaceApi = {
     listingId: number,
     data: {
       kwhRequested: number;
-      buyerDeviceId: string;
     }
   ) => {
     return apiClient<{

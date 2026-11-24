@@ -139,12 +139,19 @@ export default function BuyerMarketplacePage() {
       setCustomerConnections([]);
       return () => { active = false; };
     }
-    connectionsApi.getMine().then((response) => {
-      if (active) setCustomerConnections(response.connections || []);
-    }).catch((error) => {
-      if (active) console.error('Unable to load connection approvals:', error);
-    });
-    return () => { active = false; };
+    const refreshConnections = () => {
+      connectionsApi.getMine().then((response) => {
+        if (active) setCustomerConnections(response.connections || []);
+      }).catch((error) => {
+        if (active) console.error('Unable to load connection approvals:', error);
+      });
+    };
+    refreshConnections();
+    const interval = window.setInterval(refreshConnections, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
   }, [user?.id]);
 
   const getConnectionState = (sourceId: number) => {

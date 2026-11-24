@@ -494,7 +494,7 @@ function MarketplaceContent() {
               {listings.map((item) => (
                 <div
                   key={item.listingId}
-                  className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-6 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 group"
+                  className="min-w-0 bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-5 group"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
@@ -515,7 +515,7 @@ function MarketplaceContent() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                    <h3 className="break-words text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:text-amber-500 transition-colors">
                       {item.sourceName} <span className="text-xs text-zinc-400 font-mono font-normal">({item.deviceId})</span>
                     </h3>
 
@@ -524,10 +524,10 @@ function MarketplaceContent() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-4 md:pt-0">
+                  <div className="flex min-w-0 items-center justify-between md:justify-end gap-4 sm:gap-6 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800/80 pt-4 md:pt-0">
                     <div className="text-left md:text-right">
                       <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Tariff Rate</p>
-                      <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      <p className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
                         ₦{Number(item.pricePerKwh).toLocaleString()}<span className="text-xs text-zinc-400 font-normal">/kWh</span>
                       </p>
                     </div>
@@ -547,7 +547,7 @@ function MarketplaceContent() {
         </section>
 
         {/* Technology / How It Works Section */}
-        <section id="how-it-works" className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-3xl p-8 sm:p-12 shadow-sm space-y-8">
+        <section id="how-it-works" className="bg-white dark:bg-[#121214] border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl sm:rounded-3xl p-4 sm:p-8 lg:p-12 shadow-sm space-y-6 sm:space-y-8">
           <div className="text-center space-y-2">
             <span className="text-xs font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">PAYGO SUBSYSTEM</span>
             <h2 className="text-xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white">How PayGo Local Energy Operates</h2>

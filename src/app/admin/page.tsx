@@ -17,6 +17,8 @@ function AdminDashboardContent() {
   const [provisioning, setProvisioning] = useState(false);
   const [provisionMessage, setProvisionMessage] = useState('');
   const [provisionError, setProvisionError] = useState('');
+  const [pendingActivationDeviceId, setPendingActivationDeviceId] = useState('');
+  const [resendingActivation, setResendingActivation] = useState(false);
   const [deviceApiKey, setDeviceApiKey] = useState('');
   const [rotatingApiKey, setRotatingApiKey] = useState(false);
   const [apiKeyMessage, setApiKeyMessage] = useState('');
@@ -57,11 +59,13 @@ function AdminDashboardContent() {
         meterPurpose,
         meterPurpose === 'RECEIVING' ? Number(provisionConnectionId) : undefined
       );
+      setProvisionMessage(response.message || 'Meter provisioned.');
       if (!response.activationEmailSent) {
-        setProvisionError(response.message || 'The meter was assigned, but the activation email was not sent. Verify email configuration and arrange a secure code resend before asking the user to activate.');
+        setPendingActivationDeviceId(response.deviceId);
+        setProvisionError('The meter is assigned and the activation code is safely stored. Email delivery failed; fix the Gmail configuration, then resend a fresh code below.');
         return;
       }
-      setProvisionMessage(response.message || 'Meter provisioned and activation email sent.');
+      setPendingActivationDeviceId('');
       setProvisionDeviceId('');
       setProvisionOwnerId('');
       setProvisionConnectionId('');
@@ -72,6 +76,29 @@ function AdminDashboardContent() {
     }
   };
 
+
+  const handleResendActivation = async () => {
+    if (!pendingActivationDeviceId) return;
+    setResendingActivation(true);
+    setProvisionError('');
+    setProvisionMessage('');
+    try {
+      const response = await devicesApi.resendActivationCode(pendingActivationDeviceId);
+      setProvisionMessage(response.message);
+      if (response.activationEmailSent) {
+        setPendingActivationDeviceId('');
+        setProvisionDeviceId('');
+        setProvisionOwnerId('');
+        setProvisionConnectionId('');
+      } else {
+        setProvisionError('A fresh code was generated, but email delivery is still unavailable. Fix Gmail OAuth and retry; the previous code is no longer valid.');
+      }
+    } catch (error) {
+      setProvisionError(error instanceof Error ? error.message : 'Unable to resend the activation code.');
+    } finally {
+      setResendingActivation(false);
+    }
+  };
 
   const handleRotateDeviceApiKey = async () => {
     if (!window.confirm('Rotate the API key for DEVICE-001? The currently flashed firmware will stop authenticating until you update its local DeviceConfig.h and reflash it.')) return;

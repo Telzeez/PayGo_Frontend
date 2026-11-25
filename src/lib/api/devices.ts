@@ -17,13 +17,13 @@ export const devicesApi = {
     ),
 
   provisionMeter: async (deviceId: string, ownerId: number, purpose: 'GENERATION' | 'RECEIVING', connectionId?: number) =>
-    apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; expiresInHours: number; message: string }>(
+    apiClient<{ success: boolean; deviceId: string; ownerId: number; activationEmailSent: boolean; activationCode?: string | null; expiresInHours: number; message: string }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/provision`,
       { method: 'POST', requireAuth: true, body: JSON.stringify({ ownerId, purpose, ...(connectionId ? { connectionId } : {}) }) }
     ),
 
   resendActivationCode: async (deviceId: string) =>
-    apiClient<{ success: boolean; deviceId: string; activationEmailSent: boolean; expiresInHours: number; message: string }>(
+    apiClient<{ success: boolean; deviceId: string; activationEmailSent: boolean; activationCode?: string | null; expiresInHours: number; message: string }>(
       `/api/owner/devices/${encodeURIComponent(deviceId)}/resend-activation`,
       { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
     ),

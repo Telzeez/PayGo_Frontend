@@ -120,7 +120,7 @@ export default function NotificationBell({ canReceiveNearbyAlerts }: { canReceiv
       {open && (
         <>
           <button aria-label="Close notifications" className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
-          <section className="absolute right-0 z-40 mt-2 flex max-h-[80dvh] w-[min(90vw,360px)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <section className="fixed right-3 top-[calc(4.25rem+env(safe-area-inset-top))] z-40 flex max-h-[calc(100dvh-5.5rem-env(safe-area-inset-top))] w-[calc(100vw-1.5rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:absolute sm:right-0 sm:top-auto sm:mt-2 sm:max-h-[80dvh] sm:w-[min(90vw,360px)]">
             <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
               <div>
                 <h2 className="text-sm font-bold text-zinc-900 dark:text-white">Notifications</h2>

@@ -22,6 +22,12 @@ export const devicesApi = {
       { method: 'POST', requireAuth: true, body: JSON.stringify({ ownerId, purpose, ...(connectionId ? { connectionId } : {}) }) }
     ),
 
+  resendActivationCode: async (deviceId: string) =>
+    apiClient<{ success: boolean; deviceId: string; activationEmailSent: boolean; expiresInHours: number; message: string }>(
+      `/api/owner/devices/${encodeURIComponent(deviceId)}/resend-activation`,
+      { method: 'POST', requireAuth: true, body: JSON.stringify({}) }
+    ),
+
   activateAssignedMeter: async (deviceId: string, activationCode: string) =>
     apiClient<{ success: boolean; deviceId: string; message: string }>(
       '/api/owner/devices/activate',

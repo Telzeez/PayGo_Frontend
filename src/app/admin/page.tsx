@@ -18,6 +18,7 @@ function AdminDashboardContent() {
   const [provisionMessage, setProvisionMessage] = useState('');
   const [provisionError, setProvisionError] = useState('');
   const [pendingActivationDeviceId, setPendingActivationDeviceId] = useState('');
+  const [pendingActivationCode, setPendingActivationCode] = useState('');
   const [resendingActivation, setResendingActivation] = useState(false);
   const [deviceApiKey, setDeviceApiKey] = useState('');
   const [rotatingApiKey, setRotatingApiKey] = useState(false);
@@ -52,6 +53,7 @@ function AdminDashboardContent() {
     setProvisioning(true);
     setProvisionMessage('');
     setProvisionError('');
+    setPendingActivationCode('');
     try {
       const response = await devicesApi.provisionMeter(
         provisionDeviceId.trim(),
@@ -62,10 +64,12 @@ function AdminDashboardContent() {
       setProvisionMessage(response.message || 'Meter provisioned.');
       if (!response.activationEmailSent) {
         setPendingActivationDeviceId(response.deviceId);
-        setProvisionError('The meter is assigned and the activation code is safely stored. Email delivery failed; fix the Gmail configuration, then resend a fresh code below.');
+        setPendingActivationCode(response.activationCode || '');
+        setProvisionError('The meter is assigned. Email delivery failed; use the one-time code displayed below to activate it manually.');
         return;
       }
       setPendingActivationDeviceId('');
+      setPendingActivationCode('');
       setProvisionDeviceId('');
       setProvisionOwnerId('');
       setProvisionConnectionId('');
@@ -85,7 +89,9 @@ function AdminDashboardContent() {
     try {
       const response = await devicesApi.resendActivationCode(pendingActivationDeviceId);
       setProvisionMessage(response.message);
+      setPendingActivationCode(response.activationCode || '');
       if (response.activationEmailSent) {
+        setPendingActivationCode('');
         setPendingActivationDeviceId('');
         setProvisionDeviceId('');
         setProvisionOwnerId('');
@@ -221,11 +227,20 @@ function AdminDashboardContent() {
         {provisionMessage && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">{provisionMessage}</p>}
         {provisionError && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-400">{provisionError}</p>}
         {pendingActivationDeviceId && (
-          <div className="mt-3 flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-amber-900 dark:text-amber-200">Meter {pendingActivationDeviceId} is assigned. Send a fresh activation code after restoring Gmail email delivery.</p>
-            <button type="button" onClick={handleResendActivation} disabled={resendingActivation} className="shrink-0 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 disabled:opacity-50">
-              {resendingActivation ? 'Sending…' : 'Resend activation code'}
-            </button>
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-amber-900 dark:text-amber-200">Meter {pendingActivationDeviceId} is assigned. Use this code on the meter activation page.</p>
+              <button type="button" onClick={handleResendActivation} disabled={resendingActivation} className="shrink-0 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 disabled:opacity-50">
+                {resendingActivation ? 'Generating…' : 'Generate new code'}
+              </button>
+            </div>
+            {pendingActivationCode && (
+              <div className="mt-3 rounded-lg border border-amber-300/70 bg-white p-3 dark:border-amber-500/20 dark:bg-zinc-950">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">One-time activation code · expires in 72 hours</p>
+                <p className="mt-1 select-all font-mono text-2xl font-bold tracking-[0.2em] text-zinc-950 dark:text-white">{pendingActivationCode}</p>
+                <p className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-400">Copy this code now. It is shown only once and is not stored in readable form.</p>
+              </div>
+            )}
           </div>
         )}
         <form onSubmit={handleProvisionMeter} className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -220,6 +220,14 @@ function AdminDashboardContent() {
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Assign a meter already registered in the device registry to a verified account. The activation code is emailed to that account.</p>
         {provisionMessage && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">{provisionMessage}</p>}
         {provisionError && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-400">{provisionError}</p>}
+        {pendingActivationDeviceId && (
+          <div className="mt-3 flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-amber-900 dark:text-amber-200">Meter {pendingActivationDeviceId} is assigned. Send a fresh activation code after restoring Gmail email delivery.</p>
+            <button type="button" onClick={handleResendActivation} disabled={resendingActivation} className="shrink-0 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-zinc-950 disabled:opacity-50">
+              {resendingActivation ? 'Sending…' : 'Resend activation code'}
+            </button>
+          </div>
+        )}
         <form onSubmit={handleProvisionMeter} className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="provision-device" className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-300">Registered meter ID</label>

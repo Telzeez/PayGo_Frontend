@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const hasMeter = Boolean(selectedDeviceId && device);
   const lastSeenMs = device?.lastSeenAt ? new Date(device.lastSeenAt).getTime() : 0;
   const meterIsOnline = Boolean(
-    device?.status === 'ONLINE' && lastSeenMs > 0 && statusClock > 0 && statusClock - lastSeenMs <= 12000
+    device?.status === 'ONLINE' && lastSeenMs > 0 && statusClock > 0 && statusClock - lastSeenMs <= 15000
   );
 
   useEffect(() => {

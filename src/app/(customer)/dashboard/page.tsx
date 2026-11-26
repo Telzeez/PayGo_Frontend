@@ -59,7 +59,7 @@ export default function Dashboard() {
   }, [selectedDeviceId, loadingDevices, deviceError]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setStatusClock(Date.now()), 30000);
+    const interval = window.setInterval(() => setStatusClock(Date.now()), 3000);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -121,7 +121,8 @@ export default function Dashboard() {
   }
 
   const { balance, status, deviceId, lastSeenAt } = deviceData || {};
-  const isMeterOnline = status === 'ONLINE';
+  const lastSeenMs = lastSeenAt ? new Date(lastSeenAt).getTime() : 0;
+  const isMeterOnline = Boolean(status === 'ONLINE' && lastSeenMs > 0 && statusClock >= lastSeenMs && statusClock - lastSeenMs <= 15000);
   const lastSeenLabel = lastSeenAt ? (() => { const seconds = Math.max(0, Math.floor((statusClock - new Date(lastSeenAt).getTime()) / 1000)); if (seconds < 60) return 'just now'; if (seconds < 3600) return `${Math.floor(seconds / 60)} minute${Math.floor(seconds / 60) === 1 ? '' : 's'} ago`; if (seconds < 86400) return `${Math.floor(seconds / 3600)} hour${Math.floor(seconds / 3600) === 1 ? '' : 's'} ago`; return `${Math.floor(seconds / 86400)} day${Math.floor(seconds / 86400) === 1 ? '' : 's'} ago`; })() : 'Never connected';
 
   const getGreeting = () => {

@@ -23,6 +23,11 @@ function AdminDashboardContent() {
   const [deviceApiKey, setDeviceApiKey] = useState('');
   const [rotatingApiKey, setRotatingApiKey] = useState(false);
   const [apiKeyMessage, setApiKeyMessage] = useState('');
+  const [recoveryOwnerId, setRecoveryOwnerId] = useState('');
+  const [recoveringMeter, setRecoveringMeter] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [recoveryError, setRecoveryError] = useState('');
 
   const DEVICE_ID = 'DEVICE-001';
 
@@ -106,6 +111,16 @@ function AdminDashboardContent() {
     }
   };
 
+  const handleRecoverActivatedMeter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!window.confirm('Transfer DEVICE-001 to this verified account and invalidate its previous activation? The hardware API key, balance, readings and transaction history will be preserved.')) return;
+    setRecoveringMeter(true); setRecoveryCode(''); setRecoveryMessage(''); setRecoveryError('');
+    try {
+      const response = await devicesApi.recoverActivatedMeter(DEVICE_ID, Number(recoveryOwnerId));
+      setRecoveryCode(response.activationCode); setRecoveryMessage(response.message);
+    } catch (error: any) { setRecoveryError(error.message || 'Unable to recover the activated meter.'); }
+    finally { setRecoveringMeter(false); }
+  };
   const handleRotateDeviceApiKey = async () => {
     if (!window.confirm('Rotate the API key for DEVICE-001? The currently flashed firmware will stop authenticating until you update its local DeviceConfig.h and reflash it.')) return;
     setRotatingApiKey(true);
@@ -226,6 +241,23 @@ function AdminDashboardContent() {
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Assign a meter already registered in the device registry to a verified account. The activation code is emailed to that account.</p>
         {provisionMessage && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">{provisionMessage}</p>}
         {provisionError && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-400">{provisionError}</p>}
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-500/30 dark:bg-red-500/5">
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Recover an activated meter</h3>
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Transfer DEVICE-001 to a different verified account and issue a fresh activation code. The device API key, balance, readings and transaction history are preserved.</p>
+          <form onSubmit={handleRecoverActivatedMeter} className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <label htmlFor="recovery-owner" className="sr-only">Target account user ID</label>
+            <input id="recovery-owner" type="number" min="1" step="1" required value={recoveryOwnerId} onChange={(event) => setRecoveryOwnerId(event.target.value)} disabled={recoveringMeter} placeholder="Supervisor account user ID" className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+            <button type="submit" disabled={recoveringMeter || !recoveryOwnerId} className="rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{recoveringMeter ? 'Recovering meter…' : 'Recover DEVICE-001'}</button>
+          </form>
+          {recoveryError && <p role="alert" className="mt-3 text-xs font-semibold text-red-700 dark:text-red-400">{recoveryError}</p>}
+          {recoveryMessage && <p role="status" className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-400">{recoveryMessage}</p>}
+          {recoveryCode && <div className="mt-3 rounded-lg border border-amber-300 bg-white p-3 dark:border-amber-500/30 dark:bg-zinc-950">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">New one-time activation code · expires in 72 hours</p>
+            <p className="mt-1 select-all font-mono text-2xl font-bold tracking-[0.2em] text-zinc-950 dark:text-white">{recoveryCode}</p>
+            <button type="button" onClick={() => navigator.clipboard.writeText(recoveryCode)} className="mt-3 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold dark:border-zinc-700">Copy activation code</button>
+            <p className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-400">Shown once to an administrator. Give this code to the supervisor for activation.</p>
+          </div>}
+        </div>
         {pendingActivationDeviceId && (
           <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

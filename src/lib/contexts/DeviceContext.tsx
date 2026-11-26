@@ -99,7 +99,7 @@ export function DeviceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void refreshDevices();
-    const interval = window.setInterval(() => { void refreshDevices(); }, 15000);
+    const interval = window.setInterval(() => { void refreshDevices(); }, 3000);
     return () => window.clearInterval(interval);
   }, [refreshDevices]);
 

@@ -49,7 +49,7 @@ function AdminDashboardContent() {
 
   useEffect(() => {
     fetchAdminData();
-    const interval = setInterval(() => fetchAdminData(true), 3000);
+    const interval = setInterval(() => fetchAdminData(true), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -140,7 +140,7 @@ function AdminDashboardContent() {
   const pendingCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'PENDING').length || 0;
   const failedCount = deviceData?.transactions.filter(t => t.hardwareStatus === 'FAILED').length || 0;
   const lastSeenMs = deviceData?.lastSeenAt ? new Date(deviceData.lastSeenAt).getTime() : 0;
-  const isOnline = Boolean(deviceData?.status === 'ONLINE' && lastSeenMs > 0 && Date.now() >= lastSeenMs && Date.now() - lastSeenMs <= 15000);
+  const isOnline = Boolean(deviceData?.status === 'ONLINE' && lastSeenMs > 0 && Date.now() >= lastSeenMs && Date.now() - lastSeenMs <= 5000);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto w-full min-w-0 p-3 sm:p-6 lg:p-8">
